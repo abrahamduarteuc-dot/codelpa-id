@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Solicitudes I+D — Codelpa</title>
+<style>
+:root{
+  --bg:#f0f2f5;--surface:#fff;--surface2:#f7f8fa;--border:#e2e5ea;--border2:#d4d9e2;
+  --accent:#1a56db;--accent-l:#ebf0fd;
+  --green:#0e9f6e;--green-l:#e8f8f2;
+  --amber:#f59e0b;--amber-l:#fef3c7;
+  --red:#dc2626;--red-l:#fee2e2;
+  --text:#0f1e3d;--text2:#5a6478;--text3:#9aa3b2;
+  --f:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+  --sh:0 2px 12px rgba(26,58,107,.07);--sh2:0 8px 28px rgba(26,58,107,.15);
+  --r:12px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:var(--f);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;-webkit-tap-highlight-color:transparent;}
+
+/* ── HDR ── */
+.hdr{background:var(--surface);border-bottom:1px solid var(--border);padding:11px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:60;}
+.hdr-ico{width:30px;height:30px;background:var(--accent);border-radius:8px;display:grid;place-items:center;color:#fff;font-size:15px;font-weight:800;flex-shrink:0;}
+.hdr-t{font-size:15px;font-weight:800;}
+.hdr-s{font-size:10.5px;color:var(--text3);}
+
+/* ── TABS ── */
+.tabs{background:var(--surface);border-bottom:1px solid var(--border);display:flex;position:sticky;top:53px;z-index:59;}
+.tab{flex:1;height:44px;border:none;background:none;cursor:pointer;font-size:12.5px;font-weight:600;color:var(--text2);border-bottom:2.5px solid transparent;transition:.15s;font-family:var(--f);display:flex;align-items:center;justify-content:center;gap:5px;}
+.tab:hover{color:var(--accent);}
+.tab.on{color:var(--accent);border-bottom-color:var(--accent);}
+.badge{background:var(--accent);color:#fff;font-size:10px;font-weight:700;border-radius:9px;padding:1px 5px;min-width:16px;text-align:center;}
+.badge.amber{background:var(--amber);}
+
+/* ── WRAP ── */
+.wrap{max-width:660px;margin:0 auto;padding:18px 14px 70px;}
+.pg{display:none;animation:fadeUp .2s;}
+.pg.on{display:block;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+
+/* ── CARD ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;box-shadow:var(--sh);margin-bottom:14px;}
+.card-ttl{font-size:14px;font-weight:700;margin-bottom:4px;}
+.card-sub{font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.5;}
+
+/* ── FORM ── */
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media(max-width:480px){.row2{grid-template-columns:1fr;}}
+.fld{display:flex;flex-direction:column;gap:4px;margin-bottom:11px;}
+.fld:last-of-type{margin-bottom:0;}
+label{font-size:11.5px;font-weight:600;color:var(--text2);}
+label .req{color:var(--red);}
+input[type=text],input[type=email],input[type=date],textarea,select{
+  padding:9px 11px;border:1px solid var(--border2);border-radius:9px;font-size:13px;
+  font-family:var(--f);color:var(--text);background:var(--surface);width:100%;
+  transition:border .15s,box-shadow .15s;
+}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-l);}
+textarea{resize:vertical;min-height:72px;}
+.hint{font-size:11px;color:var(--text3);margin-top:2px;}
+
+/* ── DATALIST ── */
+input[list]{cursor:pointer;}
+
+/* ── TIPO CHIPS ── */
+.tipo-row{display:flex;gap:8px;margin-bottom:12px;}
+.tipo-chip{flex:1;padding:10px 8px;border:2px solid var(--border2);border-radius:10px;cursor:pointer;text-align:center;font-size:12.5px;font-weight:600;color:var(--text2);background:var(--surface2);transition:.15s;}
+.tipo-chip:hover{border-color:var(--accent);}
+.tipo-chip.on{border-color:var(--accent);background:var(--accent-l);color:var(--accent);}
+.tipo-chip .ico{font-size:20px;display:block;margin-bottom:3px;}
+
+/* ── TECH TOGGLE ── */
+.tech-btn{display:flex;align-items:center;gap:7px;width:100%;padding:10px 13px;background:var(--surface2);border:1.5px dashed var(--border2);border-radius:10px;cursor:pointer;font-size:12.5px;font-weight:600;color:var(--accent);font-family:var(--f);margin-bottom:0;transition:.15s;}
+.tech-btn:hover{background:var(--accent-l);border-color:var(--accent);}
+.tech-btn .chev{margin-left:auto;transition:transform .2s;}
+.tech-btn.open .chev{transform:rotate(180deg);}
+.tech-has{background:var(--accent-l);border-color:var(--accent);color:var(--accent);}
+.tech-body{display:none;padding:14px 0 0;}
+.tech-body.open{display:block;animation:fadeUp .2s;}
+
+/* ── TECH SECTIONS ── */
+.tsec{margin-bottom:14px;}
+.tsec h4{font-size:10.5px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--border);}
+.chips{display:flex;flex-wrap:wrap;gap:5px;}
+.chip{padding:5px 10px;border:1px solid var(--border2);border-radius:16px;font-size:12px;font-weight:500;cursor:pointer;background:var(--surface);transition:.12s;user-select:none;}
+.chip:hover{border-color:var(--accent);}
+.chip.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+.t2row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+@media(max-width:460px){.t2row{grid-template-columns:1fr;}}
+
+/* ── BTN ── */
+.btn{padding:11px 18px;border:none;border-radius:10px;font-size:13.5px;font-weight:700;cursor:pointer;font-family:var(--f);transition:.15s;display:inline-flex;align-items:center;justify-content:center;gap:6px;}
+.btn-primary{background:var(--accent);color:#fff;width:100%;box-shadow:0 4px 14px rgba(26,86,219,.25);}
+.btn-primary:hover{background:#1444b8;}
+.btn-ghost{background:var(--surface2);color:var(--text2);border:1px solid var(--border2);}
+.btn-ghost:hover{background:var(--border);}
+.btn-green{background:var(--green);color:#fff;}
+.btn-green:hover{background:#0c8a5e;}
+.btn-red{background:var(--red);color:#fff;}
+.btn-red:hover{background:#b91c1c;}
+.btn-sm{padding:7px 13px;font-size:12.5px;}
+.btn-full{width:100%;}
+
+/* ── SUCCESS ── */
+.success{text-align:center;padding:32px 16px;}
+.success .ico{font-size:48px;margin-bottom:10px;}
+.success h2{font-size:20px;font-weight:800;color:var(--green);}
+.success .num{font-size:26px;font-weight:800;color:var(--accent);margin:12px 0;}
+.success p{font-size:12.5px;color:var(--text2);line-height:1.6;}
+
+/* ── FILTERS ── */
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
+.fbtn{padding:7px 13px;border:1px solid var(--border2);border-radius:16px;font-size:12px;font-weight:600;cursor:pointer;background:var(--surface);color:var(--text2);transition:.12s;font-family:var(--f);}
+.fbtn:hover{border-color:var(--accent);}
+.fbtn.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+
+/* ── REQUEST CARDS ── */
+.rc{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--border2);border-radius:var(--r);padding:14px 16px;margin-bottom:11px;box-shadow:var(--sh);cursor:context-menu;}
+.rc.pend{border-left-color:var(--amber);}
+.rc.plan{border-left-color:var(--green);background:linear-gradient(90deg,var(--green-l),var(--surface) 55%);}
+.rc.done{border-left-color:var(--text3);opacity:.82;}
+.rc.cancelled{border-left-color:var(--red);background:linear-gradient(90deg,var(--red-l),var(--surface) 55%);}
+.rc-top{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:7px;}
+.rc-num{font-size:14px;font-weight:800;color:var(--accent);}
+.stbadge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:.03em;}
+.st-pend{background:var(--amber-l);color:#92400e;}
+.st-plan{background:var(--green-l);color:#065f46;}
+.st-done{background:#e5e7eb;color:#374151;}
+.st-cancelled{background:var(--red-l);color:#991b1b;}
+.tech-ico{margin-left:auto;font-size:15px;cursor:pointer;opacity:.7;}
+.tech-ico:hover{opacity:1;}
+.rc-body{font-size:13px;line-height:1.45;margin-bottom:6px;}
+.rc-meta{font-size:11px;color:var(--text3);display:flex;flex-wrap:wrap;gap:3px 12px;}
+.planinfo{display:grid;grid-template-columns:1fr 1fr;gap:5px 14px;margin-top:10px;padding:9px 11px;background:rgba(255,255,255,.7);border:1px solid var(--border);border-radius:8px;font-size:12px;}
+.planinfo span{color:var(--text2);}
+.planinfo b{color:var(--text);font-weight:600;}
+.rc-hint{font-size:11px;color:var(--text3);font-style:italic;margin-top:6px;}
+.rc-actions{display:flex;gap:8px;margin-top:11px;}
+.rc-actions .btn{flex:1;}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:40px 16px;color:var(--text3);}
+.empty .ico{font-size:38px;margin-bottom:8px;opacity:.45;}
+
+/* ── MODAL ── */
+.ov{display:none;position:fixed;inset:0;background:rgba(15,30,61,.45);z-index:100;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(2px);}
+.ov.open{display:flex;animation:fadeUp .2s;}
+.modal{background:var(--surface);border-radius:16px;width:100%;max-width:480px;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(26,58,107,.3);}
+.modal-hd{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;position:sticky;top:0;background:var(--surface);z-index:1;}
+.modal-hd h3{font-size:15px;font-weight:800;}
+.modal-hd .cls{margin-left:auto;background:none;border:none;font-size:22px;cursor:pointer;color:var(--text3);line-height:1;}
+.modal-bd{padding:18px;}
+.modal-ft{padding:14px 18px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;}
+
+/* ── CONFIRM MODAL ── */
+.confirm-ico{font-size:44px;text-align:center;margin-bottom:10px;}
+.confirm-msg{font-size:13.5px;color:var(--text2);text-align:center;line-height:1.6;margin-bottom:16px;}
+
+/* ── TECH VIEW ── */
+.tvrow{display:flex;justify-content:space-between;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--border);font-size:12.5px;gap:10px;}
+.tvrow .k{color:var(--text2);font-weight:500;flex-shrink:0;}
+.tvrow .v{font-weight:600;text-align:right;}
+
+/* ── RESPOND inline ── */
+.respond-form{margin-top:12px;padding:13px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;animation:fadeUp .2s;}
+
+/* ── CONTEXT MENU ── */
+.ctx{display:none;position:fixed;z-index:120;background:var(--surface);border:1px solid var(--border2);border-radius:10px;box-shadow:var(--sh2);overflow:hidden;min-width:185px;}
+.ctx.open{display:block;}
+.ctx-item{display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;border:none;background:none;font-family:var(--f);font-size:13px;font-weight:600;cursor:pointer;color:var(--text);text-align:left;}
+.ctx-item:hover{background:var(--surface2);}
+.ctx-item.green:hover{background:var(--green-l);color:#065f46;}
+.ctx-item.red:hover{background:var(--red-l);color:#991b1b;}
+.ctx-item.amber:hover{background:var(--amber-l);color:#92400e;}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(70px);background:#1e293b;color:#fff;padding:11px 20px;border-radius:11px;font-size:13px;font-weight:600;z-index:200;opacity:0;transition:.3s;white-space:nowrap;}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-ico">C</div>
+  <div><div class="hdr-t">Solicitudes I+D</div><div class="hdr-s">Codelpa · Laboratorio Industrial</div></div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab on" data-tab="enviar" onclick="switchTab('enviar')">📨 Enviar solicitud</button>
+  <button class="tab" data-tab="transito" onclick="switchTab('transito')">🔄 En tránsito <span class="badge amber" id="tBadge" style="display:none">0</span></button>
+  <button class="tab" data-tab="respuesta" onclick="switchTab('respuesta')">✅ Respuesta <span class="badge" id="rBadge" style="display:none">0</span></button>
+</div>
+
+<datalist id="clientes-list">
+  <option value="Bagaro"><option value="Davidson"><option value="B&C"><option value="Tulsa">
+  <option value="Promasa"><option value="Owencorning"><option value="Masonite Cabrero">
+  <option value="Masonite Chillán"><option value="CMPC Coronel"><option value="CMPC Los Ángeles">
+  <option value="JCE"><option value="Arauco Trupan"><option value="Arauco Nueva Aldea">
+  <option value="Arauco Cholguán"><option value="Arauco Hornopirén"><option value="Arauco Valdivia">
+  <option value="Marfosa"><option value="Igal"><option value="Forestal Santa Rosa">
+  <option value="Glover"><option value="CSF"><option value="CMPC Packaging"><option value="Marinetti">
+</datalist>
+
+<div class="wrap">
+
+<!-- ═══════════════ ENVIAR ═══════════════ -->
+<div class="pg on" id="pg-enviar">
+  <div id="formView">
+    <div class="card">
+      <div class="card-ttl">📨 Nueva solicitud al área técnica</div>
+      <div class="card-sub">Completa los datos básicos. Las especificaciones técnicas son opcionales.</div>
+
+      <!-- Tipo de solicitud -->
+      <div class="fld" style="margin-bottom:14px;">
+        <label>Tipo de solicitud <span class="req">*</span></label>
+        <div class="tipo-row">
+          <div class="tipo-chip on" id="tipo-dn" onclick="selTipo('DN')">
+            <span class="ico">🔬</span>Desarrollo nuevo
+          </div>
+          <div class="tipo-chip" id="tipo-at" onclick="selTipo('AT')">
+            <span class="ico">🛠️</span>Asistencia técnica
+          </div>
+        </div>
+      </div>
+
+      <!-- Nombre + Correo -->
+      <div class="row2">
+        <div class="fld"><label>Nombre <span class="req">*</span></label><input type="text" id="f_nombre" placeholder="Tu nombre y apellido"></div>
+        <div class="fld"><label>Tu correo <span class="req">*</span></label><input type="email" id="f_correo" placeholder="nombre@codelpa.cl"><div class="hint">Recibirás la respuesta aquí</div></div>
+      </div>
+
+      <!-- Cliente + Proyecto -->
+      <div class="row2">
+        <div class="fld"><label>Cliente</label><input type="text" id="f_cliente" list="clientes-list" placeholder="Escribe o elige..."></div>
+        <div class="fld"><label>Proyecto / tarea</label><input type="text" id="f_proyecto" placeholder="Ej: Primer para MDF"></div>
+      </div>
+
+      <!-- Descripción -->
+      <div class="fld" style="margin-bottom:12px;">
+        <label>Descripción <span class="req">*</span></label>
+        <textarea id="f_desc" rows="3" placeholder="Describe qué necesitas del área técnica..."></textarea>
+      </div>
+
+      <!-- Notificar a -->
+      <div class="fld" style="margin-bottom:14px;">
+        <label>Notificar a (área técnica)</label>
+        <input type="email" id="f_notif" value="lab_ind@codelpa.cl">
+        <div class="hint">Correo del área técnica. Editable si corresponde.</div>
+      </div>
+
+      <!-- Especificaciones técnicas -->
+      <button class="tech-btn" id="techBtn" onclick="toggleTech()">
+        <span>🔬</span><span id="techBtnTxt">+ Agregar especificaciones técnicas (opcional)</span><span class="chev">▾</span>
+      </button>
+      <div class="tech-body" id="techBody">
+        <!-- Populated by JS based on tipo -->
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="submitReq()">Enviar solicitud →</button>
+  </div>
+
+  <div id="successView" style="display:none">
+    <div class="card success">
+      <div class="ico">✅</div>
+      <h2>¡Solicitud enviada!</h2>
+      <div class="num" id="succNum">Solicitud N° 001</div>
+      <p>Quedó registrada y notificamos al área técnica.<br>Te responderemos a tu correo.</p>
+      <button class="btn btn-ghost" style="margin-top:18px;width:100%;" onclick="resetForm()">Enviar otra solicitud</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ EN TRÁNSITO ═══════════════ -->
+<div class="pg" id="pg-transito">
+  <div class="filters">
+    <button class="fbtn on" data-f="all" onclick="setFT('all','T')">Todas</button>
+    <button class="fbtn" data-f="Pendiente" onclick="setFT('Pendiente','T')">🟡 Pendientes</button>
+    <button class="fbtn" data-f="Cancelada" onclick="setFT('Cancelada','T')">🔴 Canceladas</button>
+  </div>
+  <div id="tList"></div>
+</div>
+
+<!-- ═══════════════ RESPUESTA ═══════════════ -->
+<div class="pg" id="pg-respuesta">
+  <div class="filters">
+    <button class="fbtn on" data-f="all" onclick="setFR('all')">Todas</button>
+    <button class="fbtn" data-f="En plan" onclick="setFR('En plan')">🟢 En plan</button>
+    <button class="fbtn" data-f="Completada" onclick="setFR('Completada')">✅ Completadas</button>
+    <button class="fbtn" data-f="Cancelada_R" onclick="setFR('Cancelada_R')">🔴 Canceladas</button>
+  </div>
+  <div id="rList"></div>
+</div>
+
+</div><!-- /wrap -->
+
+<!-- ═══ MODAL: Tech view ═══ -->
+<div class="ov" id="techViewOv">
+  <div class="modal">
+    <div class="modal-hd"><span>🔬</span><h3>Especificaciones técnicas</h3><button class="cls" onclick="closeOv('techViewOv')">×</button></div>
+    <div class="modal-bd" id="techViewBody"></div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Detail / actions ═══ -->
+<div class="ov" id="detailOv">
+  <div class="modal">
+    <div class="modal-hd"><span id="detailIco">📄</span><h3 id="detailTitle">Detalle solicitud</h3><button class="cls" onclick="closeOv('detailOv')">×</button></div>
+    <div class="modal-bd" id="detailBody"></div>
+    <div class="modal-ft" id="detailFt"></div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Confirm ═══ -->
+<div class="ov" id="confirmOv">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-bd" style="padding:24px 22px;">
+      <div class="confirm-ico" id="confIco">⚠️</div>
+      <div class="confirm-msg" id="confMsg"></div>
+      <div class="fld" id="confReasonWrap" style="display:none;margin-bottom:14px;">
+        <label>Motivo <span class="req">*</span></label>
+        <textarea id="confReason" rows="2" placeholder="Ingresa el motivo..."></textarea>
+      </div>
+      <div class="fld" id="confDateWrap" style="display:none;margin-bottom:14px;">
+        <label>Fecha de cierre real</label>
+        <input type="date" id="confDate">
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost btn-sm" onclick="closeOv('confirmOv')">Cancelar</button>
+      <button class="btn btn-sm" id="confYesBtn" onclick="_confCb&&_confCb()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Context menu -->
+<div class="ctx" id="ctx">
+  <button class="ctx-item green" id="ctxComplete" onclick="ctxAction('complete')">✅ Marcar como completado</button>
+  <button class="ctx-item amber" id="ctxRevert" onclick="ctxAction('revert')">↩ Revertir completación</button>
+  <button class="ctx-item red" id="ctxCancel" onclick="ctxAction('cancel')">✕ Cancelar solicitud</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════════════════════════
+   CONFIG
+═══════════════════════════════ */
+const CFG={
+  SHEETS_URL:'https://script.google.com/macros/s/AKfycbz7b-NYAl-EJOV8AhszTl42x7F4vpelwELGgQLbx1K_tmTOQMH4Z9zdXdzp-CZibc2C/exec',
+  EMAILJS:{publicKey:'',serviceId:'',tmplConfirm:'',tmplNotify:'',tmplResult:''}
+};
+
+/* ═══════════════════════════════
+   ESTADO
+═══════════════════════════════ */
+let reqs=[];
+let filterT='all', filterR='all';
+let tipoSel='DN';
+let techState={};
+let techOpen=false;
+let ctxNum=null;
+let _confCb=null;
+
+const LS='codelpa_sol_v2';
+
+/* ═══════════════════════════════
+   SCHEMAS TÉCNICOS
+═══════════════════════════════ */
+const SCHEMA_DN=[
+  {s:'Información general',f:[
+    {k:'tipoOp',l:'Tipo de oportunidad',t:'chips',o:['Nuevo negocio','Producto de línea']},
+    {k:'volumen',l:'Volumen potencial (Lt/mes)',t:'text'},
+    {k:'costoEsp',l:'Costo esperado ($/Lt)',t:'text'},
+    {k:'contacto',l:'Contacto técnico',t:'text'},
+  ]},
+  {s:'Recubrimiento',f:[
+    {k:'tipoRecub',l:'Tipo',t:'chips',o:['Trefila','Primer','Esmalte','Barniz','Sellador','Otro']},
+    {k:'referencia',l:'Referencia',t:'chips',o:['Muestra líquida','Sustrato físico','Nuevo']},
+    {k:'exposicion',l:'Exposición',t:'chips',o:['Interior','Exterior','Exterior protegido']},
+    {k:'sustrato',l:'Sustrato',t:'chips',o:['Pino','MDF','HDF','Fibrocemento','OSB','Vidrio','Otro']},
+    {k:'formato',l:'Formato',t:'chips',o:['Puertas','Molduras','Board','Tablero','Otro']},
+  ]},
+  {s:'Aplicación y curado',f:[
+    {k:'metodo',l:'Método de aplicación',t:'chips',o:['Airless','Spray convencional','Vacío','Airmix','Rodillo','Cortina','Otro']},
+    {k:'curado',l:'Tipo de curado',t:'chips',o:['Horno','Ambiente','UV','2K']},
+    {k:'esquema',l:'Esquema de pintado',t:'text'},
+  ]},
+  {s:'Especificaciones objetivo',f:[
+    {k:'espesor',l:'Espesor seco (μm)',t:'text'},
+    {k:'viscosidad',l:'Viscosidad esperada',t:'text'},
+    {k:'brillo',l:'Brillo 60°',t:'text'},
+    {k:'normativa',l:'Normativa ASTM/ISO',t:'text'},
+  ]},
+  {s:'Requerimientos especiales',f:[
+    {k:'especiales',l:'Especiales',t:'chips',o:['Metalmarking','Anti-rasguño','Hidrofobicidad','Reparación','Blocking','Blocking PVA','QUV','Otro']},
+    {k:'otros',l:'Otros requerimientos',t:'textarea'},
+  ]}
+];
+const SCHEMA_AT=[
+  {s:'Información general',f:[
+    {k:'tipoSol',l:'Tipo de solicitud',t:'chips',o:['Análisis de sustrato','Visita a cliente','Ensayo laboratorio','Formulación','Otro']},
+    {k:'volumen',l:'Volumen potencial (Lt/mes)',t:'text'},
+    {k:'contacto',l:'Contacto técnico',t:'text'},
+  ]},
+  {s:'Sustrato y requerimientos',f:[
+    {k:'sustrato',l:'Sustrato',t:'chips',o:['Pino','MDF','HDF','Fibrocemento','OSB','Otro']},
+    {k:'exposicion',l:'Exposición',t:'chips',o:['Interior','Exterior','Exterior protegido']},
+    {k:'espesorSeco',l:'Espesor seco (μm)',t:'text'},
+    {k:'normativa',l:'Normativa ASTM/ISO',t:'text'},
+  ]},
+  {s:'Requerimientos',f:[
+    {k:'reqs',l:'Requerimientos específicos',t:'chips',o:['Metalmarking','Anti-rasguño','Hidrofobicidad','Blocking','QUV','Otro']},
+    {k:'detalle',l:'Explique el requerimiento en detalle',t:'textarea'},
+  ]}
+];
+
+/* ═══════════════════════════════
+   INIT
+═══════════════════════════════ */
+async function init(){
+  buildTechForm();
+  // Try cloud first
+  if(CFG.SHEETS_URL){
+    try{
+      const res = await fetch(CFG.SHEETS_URL + '?action=load&sheet=solicitudes');
+      if(res.ok){
+        const data = await res.json();
+        if(data && Array.isArray(data.requests) && data.requests.length > 0){
+          reqs = data.requests;
+          localStorage.setItem(LS, JSON.stringify(reqs));
+          renderAll_(); updateBadges(); return;
+        }
+      }
+    } catch(e){ console.warn('Solicitudes: sin nube, usando local'); }
+  }
+  // Fallback localStorage
+  const raw = localStorage.getItem(LS);
+  reqs = raw ? JSON.parse(raw) : seedDemo();
+  renderAll_(); updateBadges();
+}
+
+async function persistChanges(){
+  localStorage.setItem(LS, JSON.stringify(reqs));
+  if(!CFG.SHEETS_URL) return;
+  try{
+    await fetch(CFG.SHEETS_URL, {
+      method:'POST',
+      mode:'no-cors',
+      body: JSON.stringify({action:'save', sheet:'solicitudes', requests:reqs})
+    });
+  } catch(e){ console.warn('No se pudo guardar en nube:', e); }
+}
+
+function seedDemo(){
+  return [
+    {num:'003',fecha:'2026-06-10T09:30:00',tipo:'DN',nombre:'María González',correo:'mgonzalez@codelpa.cl',
+     notif:'lab_ind@codelpa.cl',cliente:'Promasa',proyecto:'Barniz UV para molduras',
+     desc:'Evaluar barniz UV de alto brillo para molduras de pino, resistente a blocking.',
+     tecnica:{tipoRecub:'Barniz',sustrato:'Pino',formato:'Molduras',curado:'UV',especiales:['Blocking']},
+     estado:'Pendiente'},
+    {num:'002',fecha:'2026-06-08T14:10:00',tipo:'DN',nombre:'Roberto Díaz',correo:'rdiaz@codelpa.cl',
+     notif:'lab_ind@codelpa.cl',cliente:'Arauco Trupan',proyecto:'Primer waterborne MDF',
+     desc:'Primer base agua para tableros MDF, exposición interior.',
+     tecnica:{},estado:'En plan',responsable:'Luis V.',iniPlan:'2026-06-16',finPlan:'2026-06-30'},
+    {num:'001',fecha:'2026-06-05T11:00:00',tipo:'AT',nombre:'Carla Soto',correo:'csoto@codelpa.cl',
+     notif:'lab_ind@codelpa.cl',cliente:'CMPC Coronel',proyecto:'Esmalte exterior QUV',
+     desc:'Ensayo intemperismo QUV en esmalte para exterior protegido.',
+     tecnica:{tipoSol:'Ensayo laboratorio',reqs:['QUV']},
+     estado:'Completada',responsable:'Ana Pérez',iniPlan:'2026-05-20',finPlan:'2026-06-03',cierreReal:'2026-06-04'}
+  ];
+}
+
+function save(){persistChanges();} // now async via persistChanges
+
+/* ═══════════════════════════════
+   TABS
+═══════════════════════════════ */
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
+  document.getElementById('pg-'+t).classList.add('on');
+  if(t==='transito') renderT();
+  if(t==='respuesta') renderR();
+}
+
+/* ═══════════════════════════════
+   TIPO SELECCIÓN
+═══════════════════════════════ */
+function selTipo(t){
+  tipoSel=t;
+  document.getElementById('tipo-dn').classList.toggle('on',t==='DN');
+  document.getElementById('tipo-at').classList.toggle('on',t==='AT');
+  techState={};
+  if(techOpen) buildTechForm();
+}
+
+/* ═══════════════════════════════
+   FORM TÉCNICO
+═══════════════════════════════ */
+function buildTechForm(){
+  const schema=tipoSel==='DN'?SCHEMA_DN:SCHEMA_AT;
+  const body=document.getElementById('techBody');
+  let html='';
+  schema.forEach(sec=>{
+    html+=`<div class="tsec"><h4>${sec.s}</h4>`;
+    let textQueue=[];
+    const flushQueue=()=>{
+      if(textQueue.length===1){
+        const tf=textQueue[0];
+        html+=`<div class="fld" style="margin-bottom:9px"><label>${tf.l}</label><input type="text" oninput="setTF('${tf.k}',this.value)"></div>`;
+      } else if(textQueue.length>0){
+        html+=`<div class="t2row" style="margin-bottom:9px">`;
+        textQueue.forEach(tf=>html+=`<div class="fld" style="margin-bottom:0"><label>${tf.l}</label><input type="text" oninput="setTF('${tf.k}',this.value)"></div>`);
+        html+=`</div>`;
+      }
+      textQueue=[];
+    };
+    sec.f.forEach(f=>{
+      if(f.t==='chips'){
+        html+=`<div class="fld" style="margin-bottom:9px"><label>${f.l}</label><div class="chips" data-k="${f.k}">`;
+        f.o.forEach(o=>html+=`<div class="chip" onclick="toggleChip(this,'${f.k}','${o}')">${o}</div>`);
+        html+=`</div></div>`;
+      } else if(f.t==='textarea'){
+        html+=`<div class="fld" style="margin-bottom:9px"><label>${f.l}</label><textarea rows="2" oninput="setTF('${f.k}',this.value)" style="min-height:56px"></textarea></div>`;
+      } else {
+        // group text fields in pairs for compact layout
+        textQueue.push(f);
+        if(textQueue.length===2){
+          html+=`<div class="t2row" style="margin-bottom:9px">`;
+          textQueue.forEach(tf=>html+=`<div class="fld" style="margin-bottom:0"><label>${tf.l}</label><input type="text" oninput="setTF('${tf.k}',this.value)"></div>`);
+          html+=`</div>`;
+          textQueue=[];
+        }
+        return; // defer rendering
+      }
+    });
+    flushQueue();
+    html+=`</div>`;
+  });
+  body.innerHTML=html;
+}
+
+function toggleTech(){
+  techOpen=!techOpen;
+  document.getElementById('techBtn').classList.toggle('open',techOpen);
+  document.getElementById('techBody').classList.toggle('open',techOpen);
+  if(techOpen) buildTechForm();
+}
+
+function toggleChip(el,k,v){
+  el.classList.toggle('on');
+  if(!Array.isArray(techState[k])) techState[k]=[];
+  const i=techState[k].indexOf(v);
+  if(i>=0) techState[k].splice(i,1); else techState[k].push(v);
+  if(!techState[k].length) delete techState[k];
+  updateTechBtn();
+}
+function setTF(k,v){v.trim()?techState[k]=v.trim():delete techState[k]; updateTechBtn();}
+function updateTechBtn(){
+  const has=Object.keys(techState).length>0;
+  const btn=document.getElementById('techBtn');
+  btn.classList.toggle('tech-has',has);
+  document.getElementById('techBtnTxt').textContent=has?'🔬 Especificaciones técnicas cargadas':'+ Agregar especificaciones técnicas (opcional)';
+}
+function hasTech(t){return t&&Object.keys(t).length>0;}
+
+/* ═══════════════════════════════
+   ENVIAR
+═══════════════════════════════ */
+function nextNum(){let m=0;reqs.forEach(r=>{const n=parseInt(r.num);if(n>m)m=n;});return String(m+1).padStart(3,'0');}
+
+function submitReq(){
+  const nombre=v('f_nombre'),correo=v('f_correo'),desc=v('f_desc');
+  if(!nombre){toast('⚠️ Ingresa tu nombre');return;}
+  if(!correo||!/.+@.+\..+/.test(correo)){toast('⚠️ Ingresa un correo válido');return;}
+  if(!desc){toast('⚠️ Ingresa una descripción');return;}
+  const num=nextNum();
+  reqs.unshift({num,fecha:new Date().toISOString(),tipo:tipoSel,nombre,correo,
+    notif:v('f_notif')||'lab_ind@codelpa.cl',cliente:v('f_cliente'),proyecto:v('f_proyecto'),
+    desc,tecnica:{...techState},estado:'Pendiente'});
+  save();
+  document.getElementById('succNum').textContent='Solicitud N° '+num;
+  document.getElementById('formView').style.display='none';
+  document.getElementById('successView').style.display='block';
+  updateBadges();
+  window.scrollTo(0,0);
+}
+
+function resetForm(){
+  ['f_nombre','f_correo','f_cliente','f_proyecto','f_desc'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f_notif').value='lab_ind@codelpa.cl';
+  techState={};techOpen=false;tipoSel='DN';
+  document.getElementById('techBtn').classList.remove('open','tech-has');
+  document.getElementById('techBody').classList.remove('open');
+  document.getElementById('techBtnTxt').textContent='+ Agregar especificaciones técnicas (opcional)';
+  selTipo('DN');
+  document.getElementById('successView').style.display='none';
+  document.getElementById('formView').style.display='block';
+}
+
+/* ═══════════════════════════════
+   RENDER TRÁNSITO
+═══════════════════════════════ */
+function setFT(f){filterT=f;document.querySelectorAll('#pg-transito .fbtn').forEach(b=>b.classList.toggle('on',b.dataset.f===f));renderT();}
+function setFR(f){filterR=f;document.querySelectorAll('#pg-respuesta .fbtn').forEach(b=>b.classList.toggle('on',b.dataset.f===f));renderR();}
+
+// Fix: properly handle filter buttons with onclick params
+document.querySelectorAll && (() => {})();
+
+function renderAll_(){renderT();renderR();}
+
+function renderT(){
+  const tStates=['Pendiente','Cancelada'];
+  let list=reqs.filter(r=>tStates.includes(r.estado));
+  if(filterT!=='all') list=list.filter(r=>r.estado===filterT);
+  list=list.slice().sort((a,b)=>parseInt(b.num)-parseInt(a.num));
+  const el=document.getElementById('tList');
+  if(!list.length){el.innerHTML=`<div class="empty"><div class="ico">📭</div><p>Sin solicitudes aquí.</p></div>`;return;}
+  el.innerHTML=list.map(r=>cardHTML(r,'T')).join('');
+}
+
+function renderR(){
+  const rStates=['En plan','Completada','Cancelada_R'];
+  let list=reqs.filter(r=>rStates.includes(r.estado));
+  if(filterR!=='all') list=list.filter(r=>r.estado===filterR);
+  list=list.slice().sort((a,b)=>parseInt(b.num)-parseInt(a.num));
+  const el=document.getElementById('rList');
+  if(!list.length){el.innerHTML=`<div class="empty"><div class="ico">📬</div><p>Sin respuestas aquí.</p></div>`;return;}
+  el.innerHTML=list.map(r=>cardHTML(r,'R')).join('');
+}
+
+function stClass(e){
+  if(e==='Pendiente') return 'pend';
+  if(e==='En plan') return 'plan';
+  if(e==='Completada') return 'done';
+  if(e==='Cancelada'||e==='Cancelada_R') return 'cancelled';
+  return '';
+}
+function stBadge(e){
+  if(e==='Pendiente') return '<span class="stbadge st-pend">Pendiente</span>';
+  if(e==='En plan') return '<span class="stbadge st-plan">En plan</span>';
+  if(e==='Completada') return '<span class="stbadge st-done">Completada</span>';
+  if(e==='Cancelada'||e==='Cancelada_R') return '<span class="stbadge st-cancelled">Cancelada</span>';
+  return '';
+}
+function tipoLabel(t){return t==='DN'?'🔬 Desarrollo nuevo':'🛠️ Asistencia técnica';}
+function fd(s){if(!s)return '—';const d=new Date(s.length<=10?s+'T00:00:00':s);return d.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'2-digit'});}
+
+function cardHTML(r,tab){
+  const techIco=hasTech(r.tecnica)?`<span class="tech-ico" onclick="viewTech('${r.num}')" title="Ver especificaciones">📋</span>`:'';
+  let planPart='';
+  if((r.estado==='En plan'||r.estado==='Completada')&&(r.iniPlan||r.finPlan)){
+    planPart=`<div class="planinfo" style="grid-template-columns:1fr;gap:7px;padding:11px 13px">
+      <div style="display:flex;align-items:center;gap:8px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+        <span style="font-size:18px">👤</span>
+        <div>
+          <div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.04em">Responsable asignado</div>
+          <div style="font-size:13.5px;font-weight:700;color:var(--text)">${r.responsable||'—'}</div>
+          ${r.emailResp?`<div style="font-size:11.5px;color:var(--text2)">✉️ ${r.emailResp}</div>`:''}
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:2px">
+        <div style="background:var(--green-l);border-radius:8px;padding:8px 10px">
+          <div style="font-size:10.5px;color:#065f46;font-weight:600;margin-bottom:2px">▶ Empezará el</div>
+          <div style="font-size:13.5px;font-weight:800;color:#065f46">${fd(r.iniPlan)}</div>
+        </div>
+        <div style="background:var(--accent-l);border-radius:8px;padding:8px 10px">
+          <div style="font-size:10.5px;color:var(--accent);font-weight:600;margin-bottom:2px">🏁 Estará listo el</div>
+          <div style="font-size:13.5px;font-weight:800;color:var(--accent)">${fd(r.finPlan)}</div>
+        </div>
+      </div>
+      ${r.cierreReal?`<div style="font-size:12px;color:var(--text2);margin-top:4px">✅ Cierre real: <b>${fd(r.cierreReal)}</b></div>`:''}
+    </div>`;
+  }
+  if(r.estado==='Cancelada'||r.estado==='Cancelada_R'){
+    planPart=`<div class="planinfo" style="grid-template-columns:1fr"><span>Motivo cancelación: <b>${r.motivoCancelacion||'—'}</b></span></div>`;
+  }
+  let actions='';
+  if(tab==='T'&&r.estado==='Pendiente'){
+    actions=`<div class="rc-actions">
+      <button class="btn btn-green btn-sm" onclick="openDetail('${r.num}')">📄 Ver detalle</button>
+      <button class="btn btn-primary btn-sm" onclick="openRespond('${r.num}')">🔗 Responder</button>
+    </div>`;
+  }
+  if(tab==='R'&&r.estado==='En plan'){
+    actions=`<div class="rc-hint">Clic derecho para opciones</div>`;
+  }
+  const ctx=tab==='R'&&(r.estado==='En plan'||r.estado==='Completada')?`oncontextmenu="onCtx(event,'${r.num}')"`:
+            tab==='T'&&r.estado==='Pendiente'?`oncontextmenu="onCtxT(event,'${r.num}')"`:'';;
+  return `<div class="rc ${stClass(r.estado)}" ${ctx}>
+    <div class="rc-top">
+      <span class="rc-num">Solicitud N° ${r.num}</span>
+      ${stBadge(r.estado)}
+      <span style="font-size:11px;color:var(--text3);margin-left:2px">${tipoLabel(r.tipo||'DN')}</span>
+      ${techIco}
+    </div>
+    <div class="rc-body"><b>${r.cliente||'Sin cliente'}</b>${r.proyecto?' — '+r.proyecto:''}<br><span style="color:var(--text2)">${r.desc}</span></div>
+    <div class="rc-meta"><span style="font-size:10.5px;font-weight:600;color:var(--text3);letter-spacing:.02em">SOLICITADO POR</span><span>👤 ${r.nombre}</span><span>✉️ ${r.correo}</span><span>📅 ${fd(r.fecha)}</span></div>
+    ${planPart}${actions}
+  </div>`;
+}
+
+/* ═══════════════════════════════
+   DETAIL MODAL
+═══════════════════════════════ */
+function openDetail(num){
+  const r=reqs.find(x=>x.num===num);if(!r)return;
+  document.getElementById('detailIco').textContent='📄';
+  document.getElementById('detailTitle').textContent='Solicitud N° '+num;
+  document.getElementById('detailBody').innerHTML=`
+    <div style="display:flex;flex-direction:column;gap:7px;font-size:13px">
+      <div><b>Tipo:</b> ${tipoLabel(r.tipo||'DN')}</div>
+      <div><b>Solicitante:</b> ${r.nombre} · ${r.correo}</div>
+      <div><b>Cliente:</b> ${r.cliente||'—'}</div>
+      <div><b>Proyecto:</b> ${r.proyecto||'—'}</div>
+      <div><b>Descripción:</b> ${r.desc}</div>
+      <div><b>Fecha envío:</b> ${fd(r.fecha)}</div>
+      ${hasTech(r.tecnica)?'<div style="margin-top:6px"><button class="btn btn-ghost btn-sm" onclick="viewTech(\''+num+'\')">🔬 Ver especificaciones técnicas</button></div>':''}
+    </div>`;
+  document.getElementById('detailFt').innerHTML=`<button class="btn btn-ghost btn-sm" onclick="closeOv('detailOv')">Cerrar</button>`;
+  document.getElementById('detailOv').classList.add('open');
+}
+
+/* ═══════════════════════════════
+   RESPONDER INLINE
+═══════════════════════════════ */
+function openRespond(num){
+  const r=reqs.find(x=>x.num===num);if(!r)return;
+  document.getElementById('detailIco').textContent='🔗';
+  document.getElementById('detailTitle').textContent='Responder Solicitud N° '+num;
+  document.getElementById('detailBody').innerHTML=`
+    <div style="font-size:12.5px;color:var(--text2);margin-bottom:14px;background:var(--accent-l);padding:10px 12px;border-radius:9px;border-left:3px solid var(--accent)">
+      Esta acción enviará la solicitud al plan. Las fechas serán definidas junto a la carta Gantt y el coordinador.
+    </div>
+    <div class="row2">
+      <div class="fld"><label>Responsable asignado</label><input type="text" id="resp_resp" placeholder="Ej: Luis V."></div>
+      <div class="fld"><label>Correo del responsable</label><input type="email" id="resp_email" placeholder="lv@codelpa.cl"></div>
+    </div>
+    <div class="row2">
+      <div class="fld"><label>Fecha de inicio estimada</label><input type="date" id="resp_ini"></div>
+      <div class="fld"><label>Fecha de término estimada</label><input type="date" id="resp_fin"></div>
+    </div>`;
+  document.getElementById('detailFt').innerHTML=`
+    <button class="btn btn-ghost btn-sm" onclick="closeOv('detailOv')">Cancelar</button>
+    <button class="btn btn-green btn-sm" onclick="confirmRespond('${num}')">✅ Confirmar y enviar a plan</button>`;
+  document.getElementById('detailOv').classList.add('open');
+}
+
+function confirmRespond(num){
+  const r=reqs.find(x=>x.num===num);if(!r)return;
+  const resp=document.getElementById('resp_resp').value.trim();
+  const ini=document.getElementById('resp_ini').value;
+  const fin=document.getElementById('resp_fin').value;
+  const email=document.getElementById('resp_email').value.trim();
+  r.estado='En plan';r.responsable=resp;r.emailResp=email;r.iniPlan=ini;r.finPlan=fin;
+  save();closeOv('detailOv');renderAll_();updateBadges();
+  toast('✅ Solicitud N° '+num+' en plan');
+}
+
+/* ═══════════════════════════════
+   CONTEXT MENUS
+═══════════════════════════════ */
+function onCtx(e,num){
+  const r=reqs.find(x=>x.num===num);if(!r)return;
+  e.preventDefault();ctxNum=num;
+  const isDone=r.estado==='Completada';
+  document.getElementById('ctxComplete').style.display=isDone?'none':'flex';
+  document.getElementById('ctxRevert').style.display=isDone?'flex':'none';
+  document.getElementById('ctxCancel').style.display='flex';
+  showCtx(e);
+}
+function onCtxT(e,num){
+  e.preventDefault();ctxNum=num;
+  document.getElementById('ctxComplete').style.display='none';
+  document.getElementById('ctxRevert').style.display='none';
+  document.getElementById('ctxCancel').style.display='flex';
+  showCtx(e);
+}
+function showCtx(e){
+  const m=document.getElementById('ctx');m.classList.add('open');
+  let x=e.clientX,y=e.clientY;
+  if(x+200>innerWidth)x=innerWidth-205;
+  if(y+100>innerHeight)y=innerHeight-105;
+  m.style.left=x+'px';m.style.top=y+'px';
+}
+function ctxAction(action){
+  closeCtx();
+  const r=reqs.find(x=>x.num===ctxNum);if(!r)return;
+  if(action==='complete'){
+    const today=new Date().toISOString().slice(0,10);
+    showConfirm('✅','¿Marcar esta solicitud como completada?','','date',today,()=>{
+      r.estado='Completada';r.cierreReal=document.getElementById('confDate').value||today;
+      save();renderAll_();updateBadges();toast('✅ Solicitud N° '+ctxNum+' completada');
+    });
+  } else if(action==='revert'){
+    showConfirm('↩','¿Revertir la completación de esta solicitud?\nVolverá a estado "En plan".','','',''  ,()=>{
+      r.estado='En plan';r.cierreReal='';
+      save();renderAll_();updateBadges();toast('↩ Solicitud N° '+ctxNum+' revertida a En plan');
+    });
+  } else if(action==='cancel'){
+    const inR=r.estado==='En plan'||r.estado==='Completada';
+    showConfirm('🚫','¿Cancelar esta solicitud? Esta acción dejará un registro del motivo.','reason','',''  ,()=>{
+      const motivo=document.getElementById('confReason').value.trim();
+      if(!motivo){toast('⚠️ Ingresa el motivo');return;}
+      r.estado=inR?'Cancelada_R':'Cancelada';r.motivoCancelacion=motivo;
+      save();closeOv('confirmOv');renderAll_();updateBadges();toast('Solicitud N° '+ctxNum+' cancelada');
+    });
+  }
+}
+
+/* ═══════════════════════════════
+   CONFIRM MODAL
+═══════════════════════════════ */
+function showConfirm(ico,msg,extra,dateMode,dateDefault,cb){
+  document.getElementById('confIco').textContent=ico;
+  document.getElementById('confMsg').textContent=msg;
+  const rw=document.getElementById('confReasonWrap');
+  const dw=document.getElementById('confDateWrap');
+  rw.style.display=extra==='reason'?'block':'none';
+  if(extra==='reason') document.getElementById('confReason').value='';
+  dw.style.display=dateMode==='date'?'block':'none';
+  if(dateMode==='date') document.getElementById('confDate').value=dateDefault||'';
+  const yb=document.getElementById('confYesBtn');
+  yb.textContent=ico==='🚫'?'Confirmar cancelación':ico==='↩'?'Revertir':'Confirmar';
+  yb.style.background=ico==='🚫'?'var(--red)':ico==='✅'?'var(--green)':'var(--accent)';
+  yb.style.color='#fff';
+  _confCb=()=>{cb();if(extra!=='reason') closeOv('confirmOv');};
+  document.getElementById('confirmOv').classList.add('open');
+}
+
+/* ═══════════════════════════════
+   TECH VIEW
+═══════════════════════════════ */
+function viewTech(num){
+  const r=reqs.find(x=>x.num===num);if(!r||!hasTech(r.tecnica))return;
+  const schema=r.tipo==='AT'?SCHEMA_AT:SCHEMA_DN;
+  let html='';
+  schema.forEach(sec=>{
+    let rows='';
+    sec.f.forEach(f=>{
+      const val=r.tecnica[f.k];
+      if(val&&(!Array.isArray(val)||val.length)){
+        rows+=`<div class="tvrow"><span class="k">${f.l}</span><span class="v">${Array.isArray(val)?val.join(', '):val}</span></div>`;
+      }
+    });
+    if(rows) html+=`<div class="tsec"><h4>${sec.s}</h4>${rows}</div>`;
+  });
+  document.getElementById('techViewBody').innerHTML=html||'<p style="color:var(--text3)">Sin datos técnicos.</p>';
+  document.getElementById('techViewOv').classList.add('open');
+}
+
+/* ═══════════════════════════════
+   BADGES & UTILS
+═══════════════════════════════ */
+function updateBadges(){
+  const tp=reqs.filter(r=>r.estado==='Pendiente').length;
+  const rp=reqs.filter(r=>r.estado==='En plan').length;
+  const tb=document.getElementById('tBadge');
+  const rb=document.getElementById('rBadge');
+  tb.style.display=tp?'inline-block':'none';tb.textContent=tp;
+  rb.style.display=rp?'inline-block':'none';rb.textContent=rp;
+}
+function closeOv(id){document.getElementById(id).classList.remove('open');}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#ctx'))closeCtx();
+  const ovs=['techViewOv','detailOv','confirmOv'];
+  ovs.forEach(id=>{if(e.target.id===id)closeOv(id);});
+});
+function closeCtx(){document.getElementById('ctx').classList.remove('open');}
+function v(id){return document.getElementById(id).value.trim();}
+let _tt;
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(_tt);_tt=setTimeout(()=>t.classList.remove('show'),2800);}
+
+// Fix filter buttons - they need to properly pass param
+document.querySelectorAll('#pg-transito .fbtn').forEach(b=>{b.onclick=()=>{filterT=b.dataset.f;document.querySelectorAll('#pg-transito .fbtn').forEach(x=>x.classList.toggle('on',x===b));renderT();};});
+document.querySelectorAll('#pg-respuesta .fbtn').forEach(b=>{b.onclick=()=>{filterR=b.dataset.f;document.querySelectorAll('#pg-respuesta .fbtn').forEach(x=>x.classList.toggle('on',x===b));renderR();};});
+
+init();
+</script>
+</body>
+</html>
