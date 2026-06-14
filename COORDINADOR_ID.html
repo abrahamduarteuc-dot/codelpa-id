@@ -445,6 +445,11 @@ async function reload() {
   } catch (e) {
     setSyncStatus('err');
     dataLoaded = false;
+    // Limpiar estado para no operar con datos obsoletos tras un fallo
+    ganttAllTasks = [];
+    ganttTasks = [];
+    ganttPeople = [];
+    solicitudes = [];
     addLog('❌ Error cargando datos: ' + e.message);
     toast('⚠️ No se pudo conectar con el Sheet');
     // Limpiar el spinner para que no quede pegado
@@ -471,7 +476,11 @@ function renderSolicitudes() {
     list = list.filter(s => s.estado === 'Pendiente' || s.estado === 'En tránsito');
   }
   // ordenar por número
-  list = [...list].sort((a, b) => (a.num || '').localeCompare(b.num || ''));
+  list = [...list].sort((a, b) => {
+    const na = parseInt(a.num || '0', 10);
+    const nb = parseInt(b.num || '0', 10);
+    return na - nb;
+  });
 
   const pend = solicitudes.filter(s => s.estado === 'Pendiente' || s.estado === 'En tránsito').length;
   document.getElementById('pendBadge').textContent = pend;
@@ -534,7 +543,7 @@ function renderDisponibilidad() {
     tareas.forEach(t => {
       const s = new Date(Math.max(pd(t.start), desde));
       const e = new Date(Math.min(pd(t.end), hasta));
-      diasOcupados += Math.max(0, dd(s, e) + 1);
+      diasOcupados += Math.max(0, diasEntre(s, e));
     });
     const pct = Math.min(100, Math.round(diasOcupados / 60 * 100));
     const barColor = pct > 80 ? '#dc2626' : pct > 50 ? '#ca8a04' : '#2d5be3';
@@ -546,6 +555,11 @@ function renderDisponibilidad() {
   }).join('');
 
   el.innerHTML = rows || '<p style="font-size:12px;color:var(--text3);">Sin responsables asignados.</p>';
+}
+
+// Reconstruye ganttTasks desde la lista maestra (nunca reasignar manualmente)
+function rebuildTasks() {
+  ganttTasks = ganttAllTasks.filter(t => !t.milestone && !t._archived);
 }
 
 // ── ANALIZAR (MOTOR LOCAL) ──
@@ -575,6 +589,12 @@ const DURACIONES = {
 };
 
 // Suma N días hábiles a una fecha ISO (salta sábados y domingos)
+// ── FUNCIONES DE FECHA UNIFICADAS ──
+// Días entre dos fechas (inclusive ambos extremos), coherente en todo el sistema
+function diasEntre(a, b) {
+  return Math.round(Math.abs(b - a) / 86400000) + 1;
+}
+
 function addDiasHabiles(startISO, n) {
   let d = pd(startISO);
   let restantes = n - 1; // el día de inicio cuenta como 1
@@ -639,10 +659,10 @@ function analizarConIA() {
       tareas.forEach(t => {
         const s = new Date(Math.max(pd(t.start).getTime(), desde.getTime()));
         const e = new Date(Math.min(pd(t.end).getTime(), hasta.getTime()));
-        if (e > s) diasOcupados += Math.round((e - s) / 86400000);
+        if (e > s) diasOcupados += diasEntre(s, e);
       });
       const pctOcupacion = Math.min(100, Math.round(diasOcupados / 90 * 100));
-      const inicioSugerido = encontrarHueco(owner, Math.ceil(duracion * 1.4), ganttTasks, ganttPeople);
+      const inicioSugerido = encontrarHueco(owner, duracion, ganttTasks, ganttPeople);
       const finSugerido = addDiasHabiles(inicioSugerido, duracion);
 
       // ¿Tiene bloqueos en el período propuesto?
@@ -778,6 +798,11 @@ async function confirmarAsignacion() {
     toast('⚠️ Primero debe cargar los datos. Pulsa ↺ Actualizar.');
     return;
   }
+  // Evitar duplicados: verificar si esta solicitud ya tiene tarea en el Gantt
+  if (ganttAllTasks.some(t => t._solRef === selectedSol.num)) {
+    toast('⚠️ Esta solicitud ya fue asignada al Gantt.');
+    return;
+  }
   const btn = document.getElementById('btnConfirmar');
   btn.disabled = true;
   btn.textContent = '⏳ Guardando...';
@@ -820,9 +845,17 @@ async function confirmarAsignacion() {
     _ganttId: nuevaTarea.id
   };
 
-  // Actualizar en memoria (ambas listas)
+  // Validar fechas
+  if (pd(prop.finSugerido) < pd(prop.inicioSugerido)) {
+    btn.disabled = false;
+    btn.textContent = '✅ Confirmar y agregar al Gantt';
+    toast('⚠️ Error: fecha de fin anterior al inicio. Selecciona otra propuesta.');
+    return;
+  }
+
+  // Actualizar en memoria (lista maestra + reconstruir filtrada)
   ganttAllTasks.push(nuevaTarea);
-  ganttTasks.push(nuevaTarea);
+  rebuildTasks();
   const idx = solicitudes.findIndex(s => s.num === sol.num);
   if (idx >= 0) solicitudes[idx] = solActualizada;
 
@@ -834,21 +867,17 @@ async function confirmarAsignacion() {
       projectTitle: '',
       lastUpdated: new Date().toISOString()
     };
-    await fetch(SHEETS_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      body: JSON.stringify({ action: 'save', sheet: 'gantt', ...ganttData })
-    });
+    let ok1 = false, ok2 = false;
+    try { await fetch(SHEETS_URL, { method:'POST', mode:'no-cors', body: JSON.stringify({ action:'save', sheet:'gantt', ...ganttData }) }); ok1 = true; } catch(e) {}
+    try { await fetch(SHEETS_URL, { method:'POST', mode:'no-cors', body: JSON.stringify({ action:'save', sheet:'solicitudes', requests: solicitudes }) }); ok2 = true; } catch(e) {}
 
-    // 4. Guardar Solicitudes
-    await fetch(SHEETS_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      body: JSON.stringify({ action: 'save', sheet: 'solicitudes', requests: solicitudes })
-    });
-
-    addLog(`📤 Solicitud ${sol.num} enviada al Gantt → ${prop.responsable}`);
-    toast('📤 Enviado. Verifica en el Gantt al recargarlo.');
+    if (!ok1 || !ok2) {
+      addLog('⚠️ Posible fallo en una de las escrituras. Verifica el Gantt.');
+      toast('⚠️ Posible error de sincronización. Revisa el Gantt.');
+    } else {
+      addLog(`📤 Solicitud ${sol.num} enviada al Gantt → ${prop.responsable}`);
+      toast('📤 Enviado. Verifica en el Gantt al recargarlo.');
+    }
 
     // Actualizar UI
     selectedSol = solActualizada;
@@ -884,25 +913,27 @@ function esc(s) {
 }
 
 function encontrarHueco(owner, duracion, tasks, people) {
+  // duracion en días HÁBILES — usamos addDiasHabiles para calcular el fin real
   const ownerTasks = tasks
     .filter(t => t.owner === owner && pd(t.end) >= new Date())
     .sort((a, b) => pd(a.start) - pd(b.start));
 
   const person = people.find(p => p.name === owner);
   const blocks = (person?.blocks || []).map(b => ({ s: pd(b.start), e: pd(b.end) }));
-
   const isBloqueado = (d) => blocks.some(b => d >= b.s && d <= b.e);
 
   let cursor = new Date();
   cursor.setHours(12, 0, 0, 0);
 
-  for (let i = 0; i < 120; i++) {
+  for (let i = 0; i < 365; i++) {
     if (cursor.getDay() === 0 || cursor.getDay() === 6 || isBloqueado(cursor)) {
       cursor = ad(cursor, 1);
       continue;
     }
-    const end = ad(cursor, duracion);
-    const overlap = ownerTasks.some(t => pd(t.start) <= end && pd(t.end) >= cursor);
+    // fin calculado en días hábiles reales (no calendario)
+    const endISO = addDiasHabiles(iso(cursor), duracion);
+    const endDate = pd(endISO);
+    const overlap = ownerTasks.some(t => pd(t.start) <= endDate && pd(t.end) >= cursor);
     if (!overlap) return iso(cursor);
     cursor = ad(cursor, 1);
   }
@@ -919,7 +950,7 @@ function renderDisponibilidadManual() {
     tareas.forEach(t => {
       const s = new Date(Math.max(pd(t.start).getTime(), desde.getTime()));
       const e = new Date(Math.min(pd(t.end).getTime(), hasta.getTime()));
-      if (e > s) diasOcupados += Math.round((e - s) / 86400000);
+      if (e > s) diasOcupados += diasEntre(s, e);
     });
     const pct = Math.min(100, Math.round(diasOcupados / 60 * 100));
     return `<div class="person-row">
@@ -1044,12 +1075,12 @@ function consultaRapida() {
     tareas.forEach(t => {
       const s = new Date(Math.max(pd(t.start).getTime(), desde.getTime()));
       const e = new Date(Math.min(pd(t.end).getTime(), ad(desde, 90).getTime()));
-      if (e > s) diasOcupados += Math.round((e - s) / 86400000);
+      if (e > s) diasOcupados += diasEntre(s, e);
     });
     const pctOcupacion = Math.min(100, Math.round(diasOcupados / 90 * 100));
-    let inicio = encontrarHueco(owner, Math.ceil(durDiasHab * 1.4), ganttTasks, ganttPeople);
+    let inicio = encontrarHueco(owner, durDiasHab, ganttTasks, ganttPeople);
     if (minInicio && pd(inicio) < minInicio) {
-      inicio = encontrarHuecoDesde(owner, Math.ceil(durDiasHab * 1.4), minInicio);
+      inicio = encontrarHuecoDesde(owner, durDiasHab, minInicio);
     }
     const fin = addDiasHabiles(inicio, durDiasHab);
     return { owner, pctOcupacion, inicio, fin };
@@ -1098,7 +1129,7 @@ function tarjetaResultado(r, cls, badge, durLabel, tipo) {
     <div class="cq-res-dates">📅 ${fd(r.inicio)} → ${fd(r.fin)}</div>
     <div class="cq-res-note">Ocupación actual: ${r.pctOcupacion}% · Duración: ${durLabel}</div>
     <button class="btn btn-primary" style="width:100%;margin-top:9px;font-size:12px;padding:6px;"
-      onclick='cqAgregarGantt(${JSON.stringify(payload).replace(/'/g, "&#39;")})'>➕ Agregar al Gantt</button>
+      onclick='cqAgregarGantt(event, ${JSON.stringify(payload).replace(/'/g, "&#39;")})'>➕ Agregar al Gantt</button>
   </div>`;
 }
 
@@ -1112,8 +1143,9 @@ function encontrarHuecoDesde(owner, duracion, fechaMin) {
   let cursor = new Date(fechaMin); cursor.setHours(12, 0, 0, 0);
   for (let i = 0; i < 365; i++) {
     if (cursor.getDay() === 0 || cursor.getDay() === 6 || isBloq(cursor)) { cursor = ad(cursor, 1); continue; }
-    const end = ad(cursor, duracion);
-    const overlap = ownerTasks.some(t => pd(t.start) <= end && pd(t.end) >= cursor);
+    const endISO = addDiasHabiles(iso(cursor), duracion);
+    const endDate = pd(endISO);
+    const overlap = ownerTasks.some(t => pd(t.start) <= endDate && pd(t.end) >= cursor);
     if (!overlap) return iso(cursor);
     cursor = ad(cursor, 1);
   }
@@ -1121,25 +1153,28 @@ function encontrarHuecoDesde(owner, duracion, fechaMin) {
 }
 
 // Agregar tarea de consulta rápida directo al Gantt
-async function cqAgregarGantt(p) {
+async function cqAgregarGantt(ev, p) {
   if (!dataLoaded) {
     toast('⚠️ Primero debe cargar el Gantt. Pulsa ↺ Actualizar.');
     return;
   }
+  // Deshabilitar botón inmediatamente para evitar doble clic
+  const btn = ev && ev.target ? ev.target : null;
+  if (btn) btn.disabled = true;
   const nuevaTarea = {
     id: uid(),
     name: p.tipo === 'Tarea' ? 'Tarea planificada' : p.tipo,
     start: p.inicio,
     end: p.fin,
     type: (p.tipo === 'Tarea' ? 'Asistencia tecnica' : p.tipo),
-    owner: p.owner,
+    owner: p.owner || 'Sin asignar',
     pct: 0, color: 'blue', milestone: false, deps: [], subtasks: [], _exp: false,
     realStart: '', realEnd: '', stopped: false, stopReason: '', stoppedLog: [],
     client: '', description: `Planificada vía consulta rápida (${p.durLabel})`
   };
-  // Agregar a AMBAS listas: completa (para guardar) y filtrada (para análisis)
+  // Agregar a la lista maestra y reconstruir la filtrada (evita desalineación)
   ganttAllTasks.push(nuevaTarea);
-  ganttTasks.push(nuevaTarea);
+  rebuildTasks();
   try {
     await fetch(SHEETS_URL, {
       method: 'POST', mode: 'no-cors',
@@ -1152,11 +1187,13 @@ async function cqAgregarGantt(p) {
     addLog(`📤 Tarea enviada al Gantt: ${p.owner} (${fd(p.inicio)} → ${fd(p.fin)})`);
     toast('📤 Tarea enviada. Verifica en el Gantt al recargarlo.');
     renderDisponibilidad();
+    if (btn) btn.disabled = false;
   } catch (e) {
     ganttAllTasks.pop();
-    ganttTasks.pop();
+    rebuildTasks();
     addLog('❌ Error al enviar: ' + e.message);
     toast('⚠️ Error al guardar. Intenta de nuevo.');
+    if (btn) btn.disabled = false;
   }
 }
 
