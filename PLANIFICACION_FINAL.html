@@ -778,7 +778,7 @@ canvas{display:block;max-width:100%;}
     🖨 Imprimir
   </button>
   <div style="display:flex;align-items:center;gap:5px">
-    <button onclick="cloudRefresh()" title="Actualizar desde la nube" style="display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;color:var(--text2);transition:.15s" onmouseenter="this.style.background='var(--border)'" onmouseleave="this.style.background='var(--surface2)'"><span id="syncDot" style="width:8px;height:8px;border-radius:50%;background:#9aa3b2;flex-shrink:0;transition:background .3s" title="Estado sincronización"></span>☁️ Nube</button>
+    <button onclick="cloudSave()" title="Guardar en la nube" style="display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;color:var(--text2);transition:.15s" onmouseenter="this.style.background='var(--border)'" onmouseleave="this.style.background='var(--surface2)'"><span id="syncDot" style="width:8px;height:8px;border-radius:50%;background:#9aa3b2;flex-shrink:0;transition:background .3s" title="Estado sincronización"></span>☁️ Nube</button>
     <button onclick="activateTVMode()" title="Activar modo TV/presentación" style="display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;color:var(--text2);transition:.15s" onmouseenter="this.style.background='var(--border)'" onmouseleave="this.style.background='var(--surface2)'">📺 TV</button>
   </div>
   <div class="sep"></div>
@@ -5926,8 +5926,32 @@ function saveToLocal(data){
   catch(e){ console.warn('localStorage lleno:', e); }
 }
 
-// ── CLOUD: MANUAL REFRESH ──
-async function cloudRefresh(){
+// ── CLOUD: LEER desde el Sheet (carga inicial y modo TV) ──
+async function cloudLoad(){
+  if(!CFG_CLOUD.SHEETS_URL) return;
+  console.log('☁️ CLOUD LOAD (lectura)', new Date().toLocaleTimeString('es-CL'));
+  setSyncStatus('saving');
+  try{
+    const res = await fetch(CFG_CLOUD.SHEETS_URL + '?action=load&sheet=gantt');
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data = await res.json();
+    if(data && Array.isArray(data.tasks)){
+      applyCloudData(data);
+      saveToLocal(data);
+      setSyncStatus('synced');
+      showSyncBanner('✅ Planificación actualizada desde la nube');
+    }
+  } catch(e){
+    setSyncStatus('error');
+    showSyncBanner('❌ Error al leer desde la nube');
+  }
+}
+
+// ── CLOUD: GUARDAR manualmente (botón ☁️ Nube) ──
+async function cloudSave(){
+  // En modo TV el botón nunca escribe — solo relee (TV es solo lectura)
+  if(document.body.classList.contains('tv-mode')){ cloudLoad(); return; }
+  console.log('☁️ CLOUD SAVE (escritura)', new Date().toLocaleTimeString('es-CL'));
   // ☁️ Nube = GUARDAR manualmente al Sheet (nunca lee, no sobreescribe trabajo)
   // La lectura desde el Sheet ocurre solo al cargar la página (initCloud)
   if(!CFG_CLOUD.SHEETS_URL){ showSyncBanner('ℹ️ No hay URL de nube configurada.'); return; }
@@ -6005,9 +6029,10 @@ function enableTVMode(){
   .tv-mode .gbarlbl{font-size:12px!important;}
   .tv-mode #topbar{padding:8px 16px;}`;
   document.head.appendChild(style);
-  // Auto-refresh every N minutes
+  // Auto-refresh every N minutes — LEE desde el Sheet (no escribe)
   const mins = CFG_CLOUD.TV_REFRESH_MIN || 10;
-  _tvInterval = setInterval(()=>cloudRefresh(), mins * 60 * 1000);
+  cloudLoad(); // primera lectura inmediata al entrar a modo TV
+  _tvInterval = setInterval(()=>cloudLoad(), mins * 60 * 1000);
   showSyncBanner('📺 Modo TV activo — actualización cada '+mins+' min');
 }
 
