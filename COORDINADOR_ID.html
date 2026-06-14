@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coordinador I+D — Codelpa</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --accent:#1a3a6b;
+  --accent2:#2d5be3;
+  --accent3:#4f8ef7;
+  --green:#16a34a;
+  --green-bg:#dcfce7;
+  --yellow:#ca8a04;
+  --yellow-bg:#fef9c3;
+  --red:#dc2626;
+  --red-bg:#fee2e2;
+  --orange:#ea580c;
+  --orange-bg:#ffedd5;
+  --surface:#f8fafc;
+  --surface2:#f1f5f9;
+  --surface3:#e2e8f0;
+  --border:#e2e8f0;
+  --border2:#cbd5e1;
+  --text:#0f172a;
+  --text2:#475569;
+  --text3:#94a3b8;
+  --radius:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:#f0f4fb;color:var(--text);min-height:100vh;display:flex;flex-direction:column;}
+
+/* ── TOPBAR ── */
+.topbar{background:var(--accent);color:#fff;padding:0 20px;height:52px;display:flex;align-items:center;gap:12px;flex-shrink:0;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.18);}
+.logo{font-weight:700;font-size:15px;letter-spacing:-.3px;}
+.logo span{color:var(--accent3);}
+.topbar-sep{height:20px;width:1px;background:rgba(255,255,255,.2);}
+.topbar-sub{font-size:12px;color:rgba(255,255,255,.6);}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#94a3b8;transition:background .3s;}
+.sync-dot.ok{background:#4ade80;}
+.sync-dot.err{background:#f87171;}
+.sync-dot.spin{background:#fbbf24;animation:pulse .8s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+.sync-lbl{font-size:11px;color:rgba(255,255,255,.55);}
+.topbar .btn-sm{padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:#fff;cursor:pointer;transition:background .15s;}
+.topbar .btn-sm:hover{background:rgba(255,255,255,.2);}
+
+/* ── MAIN LAYOUT ── */
+.main{display:grid;grid-template-columns:1fr 360px;gap:18px;padding:18px 20px;flex:1;max-width:1400px;width:100%;margin:0 auto;}
+@media(max-width:900px){.main{grid-template-columns:1fr;}}
+
+/* ── PANEL ── */
+.panel{background:#fff;border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;}
+.panel-hd{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+.panel-hd h2{font-size:14px;font-weight:700;color:var(--text);}
+.panel-hd .badge{margin-left:auto;background:var(--accent2);color:#fff;border-radius:20px;padding:2px 9px;font-size:11px;font-weight:700;}
+.panel-body{padding:16px;}
+
+/* ── SOLICITUD CARD ── */
+.sol-card{border:1.5px solid var(--border);border-radius:8px;padding:13px 14px;margin-bottom:10px;cursor:pointer;transition:border-color .15s,box-shadow .15s;position:relative;}
+.sol-card:hover{border-color:var(--accent3);box-shadow:0 2px 8px rgba(45,91,227,.08);}
+.sol-card.selected{border-color:var(--accent2);background:#f0f5ff;box-shadow:0 0 0 3px rgba(45,91,227,.12);}
+.sol-card.procesada{border-color:var(--green);background:#f0fdf4;opacity:.7;}
+.sol-num{font-size:10.5px;font-weight:700;color:var(--text3);font-family:'DM Mono',monospace;letter-spacing:.5px;margin-bottom:4px;}
+.sol-nombre{font-size:13.5px;font-weight:600;color:var(--text);margin-bottom:2px;}
+.sol-meta{font-size:12px;color:var(--text2);margin-bottom:6px;}
+.sol-desc{font-size:12px;color:var(--text2);line-height:1.5;border-left:3px solid var(--border2);padding-left:9px;margin-top:6px;}
+.chip{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10.5px;font-weight:600;}
+.chip-pendiente{background:var(--yellow-bg);color:var(--yellow);}
+.chip-transito{background:var(--orange-bg);color:var(--orange);}
+.chip-plan{background:var(--green-bg);color:var(--green);}
+.chip-cancelada{background:#f1f5f9;color:var(--text3);}
+
+/* ── ANÁLISIS PANEL ── */
+.empty-state{text-align:center;padding:40px 20px;color:var(--text3);}
+.empty-ico{font-size:40px;margin-bottom:10px;}
+.empty-state p{font-size:13px;line-height:1.6;}
+
+.analisis-sol{font-size:12.5px;color:var(--text2);padding:12px 14px;background:var(--surface2);border-radius:7px;margin-bottom:14px;line-height:1.6;}
+.analisis-sol strong{color:var(--text);}
+
+.prop-card{border:1.5px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px;cursor:pointer;transition:border-color .15s,box-shadow .15s;}
+.prop-card:hover{border-color:var(--accent3);box-shadow:0 2px 8px rgba(45,91,227,.1);}
+.prop-card.selected{border-color:var(--accent2);background:#f0f5ff;box-shadow:0 0 0 3px rgba(45,91,227,.12);}
+.prop-card.mejor{border-color:var(--green);}
+.prop-badge{font-size:10px;font-weight:700;border-radius:4px;padding:2px 7px;display:inline-block;margin-bottom:6px;}
+.prop-badge.mejor{background:var(--green-bg);color:var(--green);}
+.prop-badge.alt{background:var(--surface2);color:var(--text2);}
+.prop-owner{font-size:14px;font-weight:700;color:var(--text);margin-bottom:3px;}
+.prop-dates{font-size:12.5px;color:var(--accent2);font-weight:600;margin-bottom:3px;}
+.prop-reason{font-size:11.5px;color:var(--text2);line-height:1.5;}
+.prop-ocupacion{margin-top:6px;}
+.occ-bar{height:5px;border-radius:3px;background:var(--surface3);margin-top:3px;overflow:hidden;}
+.occ-fill{height:100%;border-radius:3px;background:var(--accent2);transition:width .4s;}
+.occ-lbl{font-size:10.5px;color:var(--text3);margin-top:2px;}
+
+.ia-loading{text-align:center;padding:30px 20px;color:var(--text2);}
+.ia-spinner{width:28px;height:28px;border:3px solid var(--border);border-top:3px solid var(--accent2);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── CONFIRM BAR ── */
+.confirm-bar{padding:14px 16px;background:#f0f5ff;border-top:1px solid #c7d9f8;display:flex;flex-direction:column;gap:8px;}
+.confirm-bar p{font-size:12.5px;color:var(--text2);line-height:1.5;}
+.confirm-bar p strong{color:var(--text);}
+.confirm-actions{display:flex;gap:8px;}
+.btn{padding:8px 16px;border-radius:7px;font-size:13px;font-weight:600;border:none;cursor:pointer;transition:background .15s;font-family:'DM Sans',sans-serif;}
+.btn-primary{background:var(--accent2);color:#fff;}
+.btn-primary:hover{background:#1e40af;}
+.btn-primary:disabled{background:var(--text3);cursor:not-allowed;}
+.btn-secondary{background:var(--surface2);color:var(--text2);border:1px solid var(--border2);}
+.btn-secondary:hover{background:var(--surface3);}
+.btn-danger{background:var(--red-bg);color:var(--red);}
+
+/* ── RESULT ── */
+.result-ok{background:var(--green-bg);border:1.5px solid #86efac;border-radius:8px;padding:14px 16px;margin-bottom:12px;}
+.result-ok h3{color:var(--green);font-size:13.5px;margin-bottom:4px;}
+.result-ok p{font-size:12.5px;color:#166534;line-height:1.5;}
+
+/* ── DISPONIBILIDAD MINI CHART ── */
+.disp-section{margin-bottom:16px;}
+.disp-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
+.person-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.person-name{font-size:12px;font-weight:600;color:var(--text);width:90px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.person-bar-wrap{flex:1;height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;}
+.person-bar{height:100%;border-radius:4px;background:var(--accent2);}
+.person-pct{font-size:11px;color:var(--text3);width:32px;text-align:right;font-family:'DM Mono',monospace;}
+
+/* ── LOGS ── */
+.log-item{font-size:11.5px;color:var(--text2);padding:5px 0;border-bottom:1px solid var(--border);display:flex;gap:6px;align-items:flex-start;}
+.log-item:last-child{border-bottom:none;}
+.log-ts{font-family:'DM Mono',monospace;color:var(--text3);font-size:10.5px;white-space:nowrap;padding-top:1px;}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#1e293b;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:500;transition:transform .25s;z-index:9999;pointer-events:none;white-space:nowrap;}
+#toast.show{transform:translateX(-50%) translateY(0);}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:2px;padding:10px 16px 0;background:#fff;border-bottom:1px solid var(--border);}
+.tab{padding:7px 14px;font-size:12.5px;font-weight:600;color:var(--text3);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s;}
+.tab.on{color:var(--accent2);border-bottom-color:var(--accent2);}
+
+/* ── GANTT MINI TABLE ── */
+.mini-table{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:8px;}
+.mini-table th{padding:5px 8px;background:var(--surface2);color:var(--text3);font-weight:700;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.4px;}
+.mini-table td{padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text2);}
+.mini-table tr:last-child td{border-bottom:none;}
+.mini-table td:first-child{color:var(--text);font-weight:500;}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo">Codelpa <span>I+D</span></div>
+  <div class="topbar-sep"></div>
+  <div class="topbar-sub">Coordinador de Solicitudes</div>
+  <div class="topbar-right">
+    <div class="sync-dot" id="syncDot"></div>
+    <span class="sync-lbl" id="syncLbl">Cargando...</span>
+    <button class="btn-sm" onclick="reload()">↺ Actualizar</button>
+    <a href="PLANIFICACION_FINAL.html" class="btn-sm" style="text-decoration:none">📅 Gantt</a>
+    <a href="SOLICITUDES_CODELPA.html" class="btn-sm" style="text-decoration:none">📨 Solicitudes</a>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- COL 1: Solicitudes -->
+  <div>
+    <div class="panel">
+      <div class="panel-hd">
+        <h2>📋 Solicitudes pendientes de asignar</h2>
+        <span class="badge" id="pendBadge">0</span>
+      </div>
+      <div class="tabs">
+        <button class="tab on" onclick="setTab('pendientes',this)">Pendientes / En tránsito</button>
+        <button class="tab" onclick="setTab('todas',this)">Todas</button>
+      </div>
+      <div class="panel-body" id="solList">
+        <div class="ia-loading"><div class="ia-spinner"></div><p>Cargando solicitudes...</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COL 2: Análisis -->
+  <div style="display:flex;flex-direction:column;gap:14px;">
+
+    <!-- Análisis / propuestas -->
+    <div class="panel" style="flex:1;">
+      <div class="panel-hd">
+        <h2>🤖 Análisis y propuesta</h2>
+      </div>
+      <div id="analisisPanel">
+        <div class="empty-state">
+          <div class="empty-ico">👈</div>
+          <p>Selecciona una solicitud<br>para ver el análisis de disponibilidad.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Disponibilidad del equipo -->
+    <div class="panel">
+      <div class="panel-hd">
+        <h2>👥 Ocupación del equipo</h2>
+        <span style="font-size:11px;color:var(--text3);margin-left:auto;" id="dispPeriodo"></span>
+      </div>
+      <div class="panel-body" id="dispPanel">
+        <div class="empty-state" style="padding:16px;">
+          <p style="font-size:12px;">Cargando datos del Gantt...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Log de acciones -->
+    <div class="panel">
+      <div class="panel-hd"><h2>📝 Registro de acciones</h2></div>
+      <div class="panel-body" id="logPanel" style="max-height:160px;overflow-y:auto;">
+        <div style="font-size:12px;color:var(--text3);text-align:center;padding:10px;">Sin acciones aún.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbz7b-NYAl-EJOV8AhszTl42x7F4vpelwELGgQLbx1K_tmTOQMH4Z9zdXdzp-CZibc2C/exec';
+
+let solicitudes = [];
+let ganttTasks = [];
+let ganttPeople = [];
+let selectedSol = null;
+let selectedProp = null;
+let tabActual = 'pendientes';
+let logs = [];
+
+// ── UTILS ──
+const pd = s => s ? new Date(s + 'T12:00:00') : new Date();
+const iso = d => d.toISOString().slice(0, 10);
+const fd = d => {
+  if (!d) return '—';
+  const dt = typeof d === 'string' ? pd(d) : d;
+  return dt.toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' });
+};
+const dd = (a, b) => Math.round((b - a) / 86400000);
+const ad = (d, n) => { const r = new Date(d); r.setDate(r.getDate() + n); return r; };
+const today = iso(new Date());
+const uid = () => 'T' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+
+function setSyncStatus(s) {
+  const dot = document.getElementById('syncDot');
+  const lbl = document.getElementById('syncLbl');
+  dot.className = 'sync-dot ' + (s === 'ok' ? 'ok' : s === 'err' ? 'err' : 'spin');
+  lbl.textContent = s === 'ok' ? 'Sincronizado' : s === 'err' ? 'Error de conexión' : 'Cargando...';
+}
+
+function toast(msg, dur = 3000) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), dur);
+}
+
+function addLog(msg) {
+  const ts = new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+  logs.unshift({ ts, msg });
+  renderLog();
+}
+
+function renderLog() {
+  const el = document.getElementById('logPanel');
+  if (!logs.length) { el.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:10px;">Sin acciones aún.</div>'; return; }
+  el.innerHTML = logs.slice(0, 20).map(l =>
+    `<div class="log-item"><span class="log-ts">${l.ts}</span><span>${l.msg}</span></div>`
+  ).join('');
+}
+
+// ── LOAD DATA ──
+async function reload() {
+  setSyncStatus('spin');
+  try {
+    const [rSol, rGantt] = await Promise.all([
+      fetch(SHEETS_URL + '?action=load&sheet=solicitudes').then(r => r.json()),
+      fetch(SHEETS_URL + '?action=load&sheet=gantt').then(r => r.json())
+    ]);
+    solicitudes = Array.isArray(rSol) ? rSol : (rSol.requests || []);
+    ganttTasks = (rGantt.tasks || []).filter(t => !t.milestone && !t._archived);
+    ganttPeople = rGantt.people || [];
+    setSyncStatus('ok');
+    addLog('✅ Datos cargados — ' + solicitudes.length + ' solicitudes, ' + ganttTasks.length + ' tareas');
+    renderSolicitudes();
+    renderDisponibilidad();
+  } catch (e) {
+    setSyncStatus('err');
+    addLog('❌ Error cargando datos: ' + e.message);
+    toast('⚠️ Error de conexión. Revisando...');
+  }
+}
+
+// ── TAB ──
+function setTab(tab, el) {
+  tabActual = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  el.classList.add('on');
+  renderSolicitudes();
+}
+
+// ── RENDER SOLICITUDES ──
+function renderSolicitudes() {
+  const el = document.getElementById('solList');
+  let list = solicitudes;
+  if (tabActual === 'pendientes') {
+    list = list.filter(s => s.estado === 'Pendiente' || s.estado === 'En tránsito');
+  }
+  // ordenar por número
+  list = [...list].sort((a, b) => (a.num || '').localeCompare(b.num || ''));
+
+  const pend = solicitudes.filter(s => s.estado === 'Pendiente' || s.estado === 'En tránsito').length;
+  document.getElementById('pendBadge').textContent = pend;
+
+  if (!list.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-ico">🎉</div><p>Sin solicitudes pendientes.<br>¡Todo al día!</p></div>';
+    return;
+  }
+
+  el.innerHTML = list.map(s => {
+    const chipClass = {
+      'Pendiente': 'chip-pendiente',
+      'En tránsito': 'chip-transito',
+      'En plan': 'chip-plan',
+    }[s.estado] || 'chip-cancelada';
+    const isProcesada = s.estado === 'En plan' || s.estado === 'Completada';
+    const isSelected = selectedSol && selectedSol.num === s.num;
+    return `<div class="sol-card${isSelected ? ' selected' : ''}${isProcesada ? ' procesada' : ''}"
+      onclick="selectSol('${s.num}')">
+      <div class="sol-num">SOLICITUD ${s.num || '—'}</div>
+      <div class="sol-nombre">${esc(s.nombre || s.solicitante || 'Sin nombre')}</div>
+      <div class="sol-meta">
+        <span class="chip ${chipClass}">${s.estado}</span>
+        ${s.cliente ? ' · ' + esc(s.cliente) : ''}
+        ${s.tipo ? ' · ' + esc(s.tipo) : ''}
+      </div>
+      ${s.desc ? `<div class="sol-desc">${esc(s.desc.slice(0, 120))}${s.desc.length > 120 ? '…' : ''}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ── SELECCIONAR SOLICITUD ──
+function selectSol(num) {
+  selectedSol = solicitudes.find(s => s.num === num);
+  selectedProp = null;
+  renderSolicitudes();
+  analizarConIA();
+}
+
+// ── DISPONIBILIDAD GENERAL ──
+function renderDisponibilidad() {
+  const el = document.getElementById('dispPanel');
+  const owners = [...new Set(ganttTasks.map(t => t.owner).filter(Boolean))];
+  if (!owners.length) {
+    el.innerHTML = '<p style="font-size:12px;color:var(--text3);">Sin datos de Gantt aún.</p>';
+    return;
+  }
+
+  // Próximos 60 días
+  const desde = new Date();
+  const hasta = ad(desde, 60);
+  document.getElementById('dispPeriodo').textContent = 'Próximos 60 días';
+
+  const rows = owners.map(owner => {
+    const tareas = ganttTasks.filter(t => t.owner === owner && pd(t.end) >= desde && pd(t.start) <= hasta);
+    let diasOcupados = 0;
+    tareas.forEach(t => {
+      const s = new Date(Math.max(pd(t.start), desde));
+      const e = new Date(Math.min(pd(t.end), hasta));
+      diasOcupados += Math.max(0, dd(s, e) + 1);
+    });
+    const pct = Math.min(100, Math.round(diasOcupados / 60 * 100));
+    const barColor = pct > 80 ? '#dc2626' : pct > 50 ? '#ca8a04' : '#2d5be3';
+    return `<div class="person-row">
+      <div class="person-name" title="${esc(owner)}">${esc(owner)}</div>
+      <div class="person-bar-wrap"><div class="person-bar" style="width:${pct}%;background:${barColor}"></div></div>
+      <div class="person-pct">${pct}%</div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = rows || '<p style="font-size:12px;color:var(--text3);">Sin responsables asignados.</p>';
+}
+
+// ── ANALIZAR CON IA ──
+async function analizarConIA() {
+  if (!selectedSol) return;
+  const panel = document.getElementById('analisisPanel');
+  panel.innerHTML = `<div class="ia-loading"><div class="ia-spinner"></div><p>Analizando disponibilidad del equipo...</p></div>`;
+
+  // Preparar contexto para la IA
+  const owners = [...new Set(ganttTasks.map(t => t.owner).filter(Boolean))];
+  const desde = new Date();
+  const hasta = ad(desde, 90);
+
+  // Resumen de ocupación por persona en próximos 90 días
+  const ocupacion = owners.map(owner => {
+    const tareas = ganttTasks.filter(t => t.owner === owner &&
+      pd(t.end) >= desde && pd(t.start) <= hasta);
+    let diasOcupados = 0;
+    tareas.forEach(t => {
+      const s = new Date(Math.max(pd(t.start).getTime(), desde.getTime()));
+      const e = new Date(Math.min(pd(t.end).getTime(), hasta.getTime()));
+      if (e > s) diasOcupados += Math.round((e - s) / 86400000);
+    });
+    const bloques = (ganttPeople.find(p => p.name === owner)?.blocks || []);
+    return {
+      nombre: owner,
+      diasOcupados,
+      pctOcupacion: Math.min(100, Math.round(diasOcupados / 90 * 100)),
+      tareaActuales: tareas.length,
+      proximaLibre: encontrarHueco(owner, 5, ganttTasks, ganttPeople),
+      bloqueados: bloques.map(b => `${b.start} a ${b.end}`).join(', ') || 'ninguno'
+    };
+  });
+
+  // Tipos de trabajo del Gantt para referencia
+  const tiposEnGantt = [...new Set(ganttTasks.map(t => t.type).filter(Boolean))];
+
+  const contextoIA = {
+    solicitud: {
+      numero: selectedSol.num,
+      solicitante: selectedSol.nombre || selectedSol.solicitante,
+      cliente: selectedSol.cliente,
+      tipo: selectedSol.tipo,
+      descripcion: selectedSol.desc,
+      estado: selectedSol.estado,
+      tecnica: selectedSol.tecnica || {}
+    },
+    equipo: ocupacion,
+    tiposDisponibles: tiposEnGantt,
+    hoy: today
+  };
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        system: `Eres el coordinador del área I+D de Codelpa (empresa chilena de pinturas). 
+Tu trabajo es analizar solicitudes técnicas y proponer asignaciones al equipo.
+Responde SOLO con JSON válido, sin texto adicional ni markdown.
+El JSON debe tener exactamente esta estructura:
+{
+  "resumen": "descripción breve de la solicitud en 1-2 oraciones",
+  "duracionEstimada": número de días hábiles estimados,
+  "tipoGantt": "tipo de tarea para el Gantt (elige el más apropiado de los disponibles o sugiere uno)",
+  "propuestas": [
+    {
+      "rank": 1,
+      "responsable": "nombre del responsable",
+      "inicioSugerido": "YYYY-MM-DD",
+      "finSugerido": "YYYY-MM-DD",
+      "razon": "explicación breve de por qué esta persona y estas fechas",
+      "pctOcupacion": número entre 0-100,
+      "etiqueta": "Mejor opción" o "Alternativa"
+    }
+  ],
+  "alertas": ["alerta1", "alerta2"] // lista de alertas si hay conflictos o consideraciones importantes
+}
+Considera:
+- Elige la fecha de inicio más próxima disponible (desde hoy ${today})
+- Prioriza personas con menor % de ocupación
+- La duración depende del tipo: Desarrollo nuevo 15-30 días, Asistencia técnica 3-7 días, Formulación 10-20 días, Reclamo 5-10 días
+- Sugiere máximo 2-3 propuestas
+- Las fechas deben ser reales (no en fin de semana si es posible)`,
+        messages: [{
+          role: 'user',
+          content: `Analiza esta solicitud y propone asignación:\n${JSON.stringify(contextoIA, null, 2)}`
+        }]
+      })
+    });
+
+    const data = await resp.json();
+    const raw = data.content?.[0]?.text || '{}';
+    let analisis;
+    try {
+      analisis = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    } catch (e) {
+      throw new Error('Respuesta IA no válida: ' + raw.slice(0, 100));
+    }
+
+    addLog(`🤖 IA analizó solicitud ${selectedSol.num} — ${(analisis.propuestas || []).length} propuestas`);
+    renderAnalisis(analisis);
+
+  } catch (e) {
+    addLog('❌ Error IA: ' + e.message);
+    panel.innerHTML = `<div class="panel-body">
+      <div style="color:var(--red);font-size:13px;padding:16px;background:var(--red-bg);border-radius:8px;">
+        ⚠️ No se pudo conectar con el analizador IA.<br>
+        <span style="font-size:11.5px;color:#7f1d1d;margin-top:4px;display:block;">${e.message}</span>
+      </div>
+      <div style="margin-top:12px;">
+        <div class="disp-title" style="margin-bottom:8px;">Disponibilidad manual del equipo</div>
+        ${renderDisponibilidadManual()}
+      </div>
+    </div>`;
+  }
+}
+
+function renderAnalisis(a) {
+  const panel = document.getElementById('analisisPanel');
+  const sol = selectedSol;
+
+  const alertasHTML = (a.alertas || []).length
+    ? `<div style="background:var(--yellow-bg);border:1px solid #fde047;border-radius:7px;padding:9px 12px;margin-bottom:12px;">
+        ${a.alertas.map(al => `<div style="font-size:12px;color:var(--yellow);display:flex;gap:6px;"><span>⚠️</span><span>${esc(al)}</span></div>`).join('')}
+       </div>` : '';
+
+  const propsHTML = (a.propuestas || []).map((p, i) => {
+    const isMejor = p.rank === 1;
+    return `<div class="prop-card${isMejor ? ' mejor' : ''}" id="prop_${i}" onclick="selectProp(${i}, ${JSON.stringify(p).replace(/"/g, '&quot;')})">
+      <div class="prop-badge ${isMejor ? 'mejor' : 'alt'}">${p.etiqueta || (isMejor ? '★ Mejor opción' : 'Alternativa')}</div>
+      <div class="prop-owner">👤 ${esc(p.responsable)}</div>
+      <div class="prop-dates">📅 ${fd(p.inicioSugerido)} → ${fd(p.finSugerido)}</div>
+      <div class="prop-reason">${esc(p.razon)}</div>
+      <div class="prop-ocupacion">
+        <div class="occ-bar"><div class="occ-fill" style="width:${p.pctOcupacion}%;background:${p.pctOcupacion > 80 ? '#dc2626' : p.pctOcupacion > 50 ? '#ca8a04' : '#2d5be3'}"></div></div>
+        <div class="occ-lbl">Ocupación próximos 90 días: ${p.pctOcupacion}%</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  panel.innerHTML = `
+    <div class="panel-body">
+      <div class="analisis-sol">
+        <strong>${esc(sol.num)} — ${esc(sol.tipo || 'Solicitud')}</strong><br>
+        ${esc(a.resumen || sol.desc || '')}
+        <br><span style="color:var(--accent2)">⏱ Duración estimada: <strong>${a.duracionEstimada || '?'} días hábiles</strong></span>
+        ${a.tipoGantt ? ` · Tipo Gantt: <strong>${esc(a.tipoGantt)}</strong>` : ''}
+      </div>
+      ${alertasHTML}
+      <div class="disp-title">Propuestas de asignación</div>
+      ${propsHTML || '<p style="font-size:12.5px;color:var(--text3);">Sin propuestas disponibles.</p>'}
+      <div id="confirmZone"></div>
+    </div>`;
+
+  // Auto-seleccionar la mejor propuesta
+  if (a.propuestas && a.propuestas.length) {
+    selectProp(0, a.propuestas[0], a);
+  }
+
+  // Guardar analisis globalmente para acceso en confirmación
+  window._ultimoAnalisis = a;
+}
+
+// ── SELECCIONAR PROPUESTA ──
+function selectProp(idx, prop, analisis) {
+  selectedProp = prop;
+  analisis = analisis || window._ultimoAnalisis;
+
+  document.querySelectorAll('.prop-card').forEach((c, i) => {
+    c.classList.toggle('selected', i === idx);
+  });
+
+  const zone = document.getElementById('confirmZone');
+  if (!zone) return;
+
+  zone.innerHTML = `
+    <div class="confirm-bar" style="margin-top:14px;border-radius:8px;border:1.5px solid #c7d9f8;">
+      <p>¿Confirmar asignación de <strong>${esc(selectedSol.num)}</strong> a <strong>${esc(prop.responsable)}</strong>?<br>
+      Se creará una tarea en el Gantt y se actualizará la solicitud a <strong>"En plan"</strong>.</p>
+      <div class="confirm-actions">
+        <button class="btn btn-primary" onclick="confirmarAsignacion()" id="btnConfirmar">✅ Confirmar y agregar al Gantt</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('confirmZone').innerHTML=''">Cancelar</button>
+      </div>
+    </div>`;
+}
+
+// ── CONFIRMAR ASIGNACIÓN ──
+async function confirmarAsignacion() {
+  if (!selectedSol || !selectedProp) return;
+  const btn = document.getElementById('btnConfirmar');
+  btn.disabled = true;
+  btn.textContent = '⏳ Guardando...';
+
+  const analisis = window._ultimoAnalisis || {};
+  const sol = selectedSol;
+  const prop = selectedProp;
+
+  // 1. Nueva tarea para el Gantt
+  const nuevaTarea = {
+    id: uid(),
+    name: `[${sol.num}] ${sol.cliente ? sol.cliente + ' — ' : ''}${sol.tipo || 'Solicitud'}`,
+    start: prop.inicioSugerido,
+    end: prop.finSugerido,
+    type: analisis.tipoGantt || sol.tipo || 'Asistencia tecnica',
+    owner: prop.responsable,
+    pct: 0,
+    color: 'blue',
+    milestone: false,
+    deps: [],
+    subtasks: [],
+    _exp: false,
+    realStart: '',
+    realEnd: '',
+    stopped: false,
+    stopReason: '',
+    stoppedLog: [],
+    client: sol.cliente || '',
+    description: sol.desc || '',
+    _solRef: sol.num // referencia a la solicitud origen
+  };
+
+  // 2. Actualizar solicitud
+  const solActualizada = {
+    ...sol,
+    estado: 'En plan',
+    responsable: prop.responsable,
+    iniPlan: prop.inicioSugerido,
+    finPlan: prop.finSugerido,
+    _ganttId: nuevaTarea.id
+  };
+
+  // Actualizar en memoria
+  ganttTasks.push(nuevaTarea);
+  const idx = solicitudes.findIndex(s => s.num === sol.num);
+  if (idx >= 0) solicitudes[idx] = solActualizada;
+
+  try {
+    // 3. Guardar Gantt
+    const ganttData = {
+      tasks: ganttTasks,
+      people: ganttPeople,
+      projectTitle: '',
+      lastUpdated: new Date().toISOString()
+    };
+    await fetch(SHEETS_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      body: JSON.stringify({ action: 'save', sheet: 'gantt', ...ganttData })
+    });
+
+    // 4. Guardar Solicitudes
+    await fetch(SHEETS_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      body: JSON.stringify({ action: 'save', sheet: 'solicitudes', requests: solicitudes })
+    });
+
+    addLog(`✅ Solicitud ${sol.num} asignada a ${prop.responsable} — Gantt actualizado`);
+    toast('✅ Tarea agregada al Gantt · Solicitud actualizada a "En plan"');
+
+    // Actualizar UI
+    selectedSol = solActualizada;
+    renderSolicitudes();
+    renderDisponibilidad();
+
+    // Mostrar resultado
+    const panel = document.getElementById('analisisPanel');
+    panel.innerHTML = `<div class="panel-body">
+      <div class="result-ok">
+        <h3>✅ Asignación confirmada</h3>
+        <p>
+          <strong>${esc(sol.num)}</strong> asignada a <strong>${esc(prop.responsable)}</strong><br>
+          Período: ${fd(prop.inicioSugerido)} → ${fd(prop.finSugerido)}<br>
+          Tarea ID en Gantt: <code style="font-family:'DM Mono',monospace;font-size:11px;">${nuevaTarea.id}</code>
+        </p>
+      </div>
+      <button class="btn btn-secondary" onclick="selectedSol=null;document.getElementById('analisisPanel').innerHTML='<div class=empty-state><div class=empty-ico>👈</div><p>Selecciona otra solicitud.</p></div>'" style="width:100%;margin-top:4px;">← Ver otra solicitud</button>
+    </div>`;
+
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = '✅ Confirmar y agregar al Gantt';
+    addLog('❌ Error al guardar: ' + e.message);
+    toast('⚠️ Error al guardar. Intenta de nuevo.');
+  }
+}
+
+// ── HELPERS ──
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function encontrarHueco(owner, duracion, tasks, people) {
+  const ownerTasks = tasks
+    .filter(t => t.owner === owner && pd(t.end) >= new Date())
+    .sort((a, b) => pd(a.start) - pd(b.start));
+
+  const person = people.find(p => p.name === owner);
+  const blocks = (person?.blocks || []).map(b => ({ s: pd(b.start), e: pd(b.end) }));
+
+  const isBloqueado = (d) => blocks.some(b => d >= b.s && d <= b.e);
+
+  let cursor = new Date();
+  cursor.setHours(12, 0, 0, 0);
+
+  for (let i = 0; i < 120; i++) {
+    if (cursor.getDay() === 0 || cursor.getDay() === 6 || isBloqueado(cursor)) {
+      cursor = ad(cursor, 1);
+      continue;
+    }
+    const end = ad(cursor, duracion);
+    const overlap = ownerTasks.some(t => pd(t.start) <= end && pd(t.end) >= cursor);
+    if (!overlap) return iso(cursor);
+    cursor = ad(cursor, 1);
+  }
+  return iso(ad(new Date(), 7));
+}
+
+function renderDisponibilidadManual() {
+  const owners = [...new Set(ganttTasks.map(t => t.owner).filter(Boolean))];
+  const desde = new Date();
+  const hasta = ad(desde, 60);
+  return owners.map(owner => {
+    const tareas = ganttTasks.filter(t => t.owner === owner && pd(t.end) >= desde && pd(t.start) <= hasta);
+    let diasOcupados = 0;
+    tareas.forEach(t => {
+      const s = new Date(Math.max(pd(t.start).getTime(), desde.getTime()));
+      const e = new Date(Math.min(pd(t.end).getTime(), hasta.getTime()));
+      if (e > s) diasOcupados += Math.round((e - s) / 86400000);
+    });
+    const pct = Math.min(100, Math.round(diasOcupados / 60 * 100));
+    return `<div class="person-row">
+      <div class="person-name">${esc(owner)}</div>
+      <div class="person-bar-wrap"><div class="person-bar" style="width:${pct}%;background:${pct > 80 ? '#dc2626' : '#2d5be3'}"></div></div>
+      <div class="person-pct">${pct}%</div>
+    </div>`;
+  }).join('') || '<p style="font-size:12px;color:var(--text3);">Sin responsables en Gantt.</p>';
+}
+
+// ── INIT ──
+reload();
+</script>
+</body>
+</html>

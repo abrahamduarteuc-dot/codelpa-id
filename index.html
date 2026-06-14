@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Codelpa I+D — Panel central</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --accent:#1a3a6b;
+  --accent2:#2d5be3;
+  --accent3:#4f8ef7;
+  --ink:#0f172a;
+  --ink2:#475569;
+  --ink3:#94a3b8;
+  --line:#e2e8f0;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  font-family:'DM Sans',sans-serif;
+  color:var(--ink);
+  min-height:100vh;
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(79,142,247,.18), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(26,58,107,.12), transparent 55%),
+    #f4f7fc;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:32px 20px;
+}
+
+.wrap{width:100%;max-width:760px;}
+
+/* HEADER */
+.head{margin-bottom:36px;}
+.eyebrow{
+  font-family:'DM Mono',monospace;
+  font-size:12px;
+  letter-spacing:3px;
+  text-transform:uppercase;
+  color:var(--accent2);
+  margin-bottom:10px;
+}
+.title{
+  font-size:clamp(30px,5vw,44px);
+  font-weight:700;
+  letter-spacing:-1px;
+  line-height:1.05;
+  color:var(--accent);
+}
+.title span{color:var(--accent3);}
+.subtitle{
+  font-size:15px;
+  color:var(--ink2);
+  margin-top:10px;
+  max-width:420px;
+  line-height:1.5;
+}
+
+/* CARDS */
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+}
+@media(max-width:620px){.grid{grid-template-columns:1fr;}}
+
+.card{
+  position:relative;
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:24px 22px;
+  text-decoration:none;
+  color:inherit;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  overflow:hidden;
+  transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s,border-color .2s;
+}
+.card::before{
+  content:'';
+  position:absolute;
+  inset:0 0 auto 0;
+  height:3px;
+  background:linear-gradient(90deg,var(--accent2),var(--accent3));
+  transform:scaleX(0);
+  transform-origin:left;
+  transition:transform .25s;
+}
+.card:hover{
+  transform:translateY(-3px);
+  box-shadow:0 14px 34px rgba(26,58,107,.14);
+  border-color:transparent;
+}
+.card:hover::before{transform:scaleX(1);}
+.card:focus-visible{outline:3px solid var(--accent3);outline-offset:3px;}
+
+.card-ico{
+  font-size:30px;
+  line-height:1;
+  margin-bottom:8px;
+}
+.card-title{
+  font-size:18px;
+  font-weight:700;
+  color:var(--accent);
+}
+.card-desc{
+  font-size:13px;
+  color:var(--ink2);
+  line-height:1.5;
+}
+.card-cta{
+  margin-top:12px;
+  font-size:12.5px;
+  font-weight:600;
+  color:var(--accent2);
+  display:flex;
+  align-items:center;
+  gap:5px;
+}
+.card-cta .arr{transition:transform .2s;}
+.card:hover .card-cta .arr{transform:translateX(4px);}
+
+/* Card destacado: coordinador full width */
+.card.wide{grid-column:1 / -1;flex-direction:row;align-items:center;gap:20px;}
+.card.wide .card-ico{margin-bottom:0;font-size:36px;}
+.card.wide .card-body{flex:1;}
+@media(max-width:620px){.card.wide{flex-direction:column;align-items:flex-start;}}
+
+.card.wide{
+  background:linear-gradient(135deg,#1a3a6b,#26508f);
+  border:none;
+}
+.card.wide .card-title{color:#fff;}
+.card.wide .card-desc{color:rgba(255,255,255,.78);}
+.card.wide .card-cta{color:#9ec5ff;}
+.card.wide::before{background:linear-gradient(90deg,#4f8ef7,#9ec5ff);}
+
+/* FOOTER */
+.foot{
+  margin-top:34px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:12px;
+  color:var(--ink3);
+  flex-wrap:wrap;
+}
+.foot .dot{width:5px;height:5px;border-radius:50%;background:var(--ink3);}
+.tv-link{
+  margin-left:auto;
+  font-size:12px;
+  color:var(--accent2);
+  text-decoration:none;
+  font-weight:600;
+  border:1px solid var(--line);
+  padding:6px 12px;
+  border-radius:8px;
+  background:#fff;
+  transition:background .15s;
+}
+.tv-link:hover{background:#eef4ff;}
+@media(max-width:620px){.tv-link{margin-left:0;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="head">
+    <div class="eyebrow">Investigación & Desarrollo</div>
+    <h1 class="title">Codelpa <span>I+D</span></h1>
+    <p class="subtitle">Panel central de planificación, solicitudes técnicas y coordinación del laboratorio.</p>
+  </div>
+
+  <div class="grid">
+
+    <!-- Coordinador (destacado) -->
+    <a class="card wide" href="COORDINADOR_ID.html">
+      <div class="card-ico">🤖</div>
+      <div class="card-body">
+        <div class="card-title">Coordinador</div>
+        <div class="card-desc">Revisa solicitudes pendientes, analiza la disponibilidad del equipo y asigna tareas al Gantt con un clic.</div>
+        <div class="card-cta">Abrir coordinador <span class="arr">→</span></div>
+      </div>
+    </a>
+
+    <!-- Gantt -->
+    <a class="card" href="PLANIFICACION_FINAL.html">
+      <div class="card-ico">📅</div>
+      <div class="card-title">Carta Gantt</div>
+      <div class="card-desc">Planificación de proyectos, tareas, responsables, presupuesto y KPIs.</div>
+      <div class="card-cta">Abrir Gantt <span class="arr">→</span></div>
+    </a>
+
+    <!-- Solicitudes -->
+    <a class="card" href="SOLICITUDES_CODELPA.html">
+      <div class="card-ico">📨</div>
+      <div class="card-title">Solicitudes</div>
+      <div class="card-desc">Recepción de solicitudes al área técnica: desarrollo nuevo y asistencia técnica.</div>
+      <div class="card-cta">Abrir solicitudes <span class="arr">→</span></div>
+    </a>
+
+  </div>
+
+  <div class="foot">
+    <span>Sistema interno</span>
+    <span class="dot"></span>
+    <span>Sincronizado en la nube</span>
+    <a class="tv-link" href="PLANIFICACION_FINAL.html?modo=tv">📺 Modo TV laboratorio</a>
+  </div>
+
+</div>
+</body>
+</html>
