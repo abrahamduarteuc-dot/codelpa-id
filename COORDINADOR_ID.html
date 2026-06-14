@@ -514,7 +514,10 @@ function selectSol(num) {
 // ── DISPONIBILIDAD GENERAL ──
 function renderDisponibilidad() {
   const el = document.getElementById('dispPanel');
-  const owners = [...new Set(ganttTasks.map(t => t.owner).filter(Boolean))];
+  // Priorizar ganttPeople (siempre presentes aunque no haya tareas)
+  const fromPeople = ganttPeople.map(p => p.name).filter(Boolean);
+  const fromTasks  = [...new Set(ganttTasks.map(t => t.owner).filter(Boolean))];
+  const owners = fromPeople.length ? fromPeople : fromTasks;
   if (!owners.length) {
     el.innerHTML = '<p style="font-size:12px;color:var(--text3);">Sin datos de Gantt aún.</p>';
     return;
@@ -608,7 +611,9 @@ function analizarConIA() {
 
   // Pequeño delay para que se vea el cálculo (UX)
   setTimeout(() => {
-    const owners = [...new Set(ganttTasks.map(t => t.owner).filter(Boolean))];
+    const fromPeople = ganttPeople.map(p => p.name).filter(Boolean);
+    const fromTasks  = [...new Set(ganttTasks.map(t => t.owner).filter(Boolean))];
+    const owners = fromPeople.length ? fromPeople : fromTasks;
     const tipoGantt = mapearTipoGantt(sol);
     const duracion = DURACIONES[tipoGantt] || DURACIONES[sol.tipo] || 10;
 
@@ -621,7 +626,7 @@ function analizarConIA() {
         duracionEstimada: duracion,
         tipoGantt,
         propuestas: [],
-        alertas: ['No hay responsables registrados en el Gantt. Agrega personas primero.']
+        alertas: ['No hay responsables configurados. Usa el botón ⚙️ en el Gantt para cargar el equipo.']
       });
       return;
     }
