@@ -5895,6 +5895,102 @@ function applyCloudData(data){
   syncPeople(); refreshOwnerSels(); refreshTypeSels(); renderAll();
 }
 
+// ── TV NOTIFICATIONS ──
+// Snapshot del estado anterior para detectar cambios
+let _tvSnapshot = null;
+
+function tvTakeSnapshot(){
+  _tvSnapshot = (tasks||[]).map(t=>({id:t.id, name:t.name, owner:t.owner, estado:t.estado||'', pct:t.pct||0}));
+}
+
+function tvDetectChanges(newTasks){
+  if(!_tvSnapshot || !document.body.classList.contains('tv-mode')) return;
+  const prev = _tvSnapshot;
+  const notifs = [];
+
+  newTasks.forEach(t => {
+    const old = prev.find(p => p.id === t.id);
+    if(!old){
+      // Tarea nueva
+      notifs.push({ tipo: 'nueva', tarea: t.name, responsable: t.owner || '—', color: 'azul' });
+    } else {
+      // Cambio de estado o asignación de responsable
+      const estadoCambio = old.estado !== (t.estado||'') && (t.estado||'');
+      const respCambio = old.owner !== t.owner && t.owner;
+      if(estadoCambio || respCambio){
+        notifs.push({ tipo: 'estado', tarea: t.name, responsable: t.owner || '—',
+          detalle: estadoCambio ? `Estado: ${t.estado}` : `Asignada a ${t.owner}`, color: 'amarillo' });
+      }
+    }
+  });
+
+  if(notifs.length) tvShowNotification(notifs);
+}
+
+function tvShowNotification(notifs){
+  // Eliminar notificación anterior si existe
+  const old = document.getElementById('tvNotifOverlay');
+  if(old) old.remove();
+
+  const n = notifs[0]; // mostrar la primera; si hay varias, las encola
+  const esNueva = n.tipo === 'nueva';
+
+  const overlay = document.createElement('div');
+  overlay.id = 'tvNotifOverlay';
+  overlay.style.cssText = `
+    position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;
+    display:flex;align-items:center;justify-content:center;
+    animation:tvFadeIn .4s ease;cursor:pointer;
+  `;
+
+  const card = document.createElement('div');
+  card.style.cssText = `
+    background:${esNueva ? '#1a3a6b' : '#1a1a00'};
+    border:3px solid ${esNueva ? '#4f8ef7' : '#f59e0b'};
+    border-radius:20px;padding:40px 52px;text-align:center;
+    max-width:600px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.5);
+    animation:tvSlideUp .4s cubic-bezier(.2,.8,.2,1);
+    font-family:'DM Sans',sans-serif;
+  `;
+
+  const icon = esNueva ? '👆' : '🔔';
+  const titulo = esNueva ? 'Nueva tarea asignada' : 'Actualización de tarea';
+  const colorTexto = esNueva ? '#9ec5ff' : '#fde68a';
+  const colorTitulo = esNueva ? '#ffffff' : '#fef3c7';
+
+  card.innerHTML = `
+    <div style="font-size:56px;margin-bottom:16px;line-height:1;">${icon}</div>
+    <div style="font-size:15px;font-weight:600;color:${colorTexto};text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;">${titulo}</div>
+    <div style="font-size:32px;font-weight:700;color:${colorTitulo};margin-bottom:12px;line-height:1.2;">${esc(n.tarea)}</div>
+    <div style="font-size:20px;color:${colorTexto};margin-bottom:8px;">👤 ${esc(n.responsable)}</div>
+    ${n.detalle ? `<div style="font-size:16px;color:${colorTexto};opacity:.8;margin-bottom:20px;">${esc(n.detalle)}</div>` : '<div style="margin-bottom:20px;"></div>'}
+    <div style="font-size:13px;color:${colorTexto};opacity:.55;margin-top:8px;">Clic en cualquier lugar para volver · se cierra en 5 min</div>
+    ${notifs.length > 1 ? `<div style="font-size:13px;color:${colorTexto};opacity:.6;margin-top:6px;">+${notifs.length-1} cambio${notifs.length>2?'s':''} adicional${notifs.length>2?'es':''}</div>` : ''}
+  `;
+
+  overlay.appendChild(card);
+  document.body.appendChild(overlay);
+
+  // Cerrar con click en cualquier lugar
+  overlay.addEventListener('click', ()=>{ overlay.remove(); tvTakeSnapshot(); });
+
+  // Cerrar automáticamente a los 5 minutos
+  const _autoClose = setTimeout(()=>{ overlay.remove(); tvTakeSnapshot(); }, 5 * 60 * 1000);
+  overlay._autoClose = _autoClose;
+}
+
+// Inyectar animaciones CSS para notificaciones TV
+(function(){
+  if(document.getElementById('tvNotifStyle')) return;
+  const s = document.createElement('style');
+  s.id = 'tvNotifStyle';
+  s.textContent = `
+    @keyframes tvFadeIn { from{opacity:0} to{opacity:1} }
+    @keyframes tvSlideUp { from{transform:translateY(40px);opacity:0} to{transform:translateY(0);opacity:1} }
+  `;
+  document.head.appendChild(s);
+})();
+
 // ── CLOUD: PERSIST ──
 async function persistChanges(){
   const data = {
@@ -5907,12 +6003,12 @@ async function persistChanges(){
   if(!CFG_CLOUD.SHEETS_URL || !CFG_CLOUD.AUTO_SAVE) return;
   setSyncStatus('saving');
   try{
-    const res = await fetch(CFG_CLOUD.SHEETS_URL, {
+    await fetch(CFG_CLOUD.SHEETS_URL, {
       method: 'POST',
       mode: 'no-cors',
       body: JSON.stringify({action:'save', sheet:'gantt', ...data})
     });
-    if(!res.ok) throw new Error('HTTP '+res.status);
+    // Con no-cors la respuesta es opaca: si no hubo error de red, asumimos guardado OK
     _lastSync = data.lastUpdated;
     setSyncStatus('synced');
   } catch(e){
@@ -5927,23 +6023,38 @@ function saveToLocal(data){
 }
 
 // ── CLOUD: LEER desde el Sheet (carga inicial y modo TV) ──
-async function cloudLoad(){
+async function cloudLoad(_esReintento){
   if(!CFG_CLOUD.SHEETS_URL) return;
   console.log('☁️ CLOUD LOAD (lectura)', new Date().toLocaleTimeString('es-CL'));
+  // Snapshot antes de actualizar (para detectar cambios en modo TV)
+  if(document.body.classList.contains('tv-mode') && !_tvSnapshot) tvTakeSnapshot();
   setSyncStatus('saving');
   try{
-    const res = await fetch(CFG_CLOUD.SHEETS_URL + '?action=load&sheet=gantt');
+    // cache-busting: evita respuestas cacheadas viejas del navegador/Google
+    const res = await fetch(CFG_CLOUD.SHEETS_URL + '?action=load&sheet=gantt&_t=' + Date.now());
     if(!res.ok) throw new Error('HTTP '+res.status);
     const data = await res.json();
     if(data && Array.isArray(data.tasks)){
+      // Detectar cambios ANTES de aplicar (compara con snapshot)
+      if(document.body.classList.contains('tv-mode') && _tvSnapshot){
+        tvDetectChanges(data.tasks);
+      }
       applyCloudData(data);
       saveToLocal(data);
+      // Actualizar snapshot tras aplicar (si no hay notificación activa)
+      if(!document.getElementById('tvNotifOverlay')) tvTakeSnapshot();
       setSyncStatus('synced');
       showSyncBanner('✅ Planificación actualizada desde la nube');
     }
   } catch(e){
     setSyncStatus('error');
-    showSyncBanner('❌ Error al leer desde la nube');
+    // Reintento único a los 10s si fue un fallo en el ciclo automático
+    if(!_esReintento){
+      showSyncBanner('⚠️ Reintentando conexión...');
+      setTimeout(()=>cloudLoad(true), 10000);
+    } else {
+      showSyncBanner('❌ Error al leer desde la nube');
+    }
   }
 }
 
