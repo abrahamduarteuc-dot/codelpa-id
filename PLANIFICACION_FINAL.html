@@ -5928,21 +5928,27 @@ function saveToLocal(data){
 
 // ── CLOUD: MANUAL REFRESH ──
 async function cloudRefresh(){
-  if(!CFG_CLOUD.SHEETS_URL){ showSyncBanner('ℹ️ No hay URL de nube configurada. Usando datos locales.'); return; }
+  // ☁️ Nube = GUARDAR manualmente al Sheet (nunca lee, no sobreescribe trabajo)
+  // La lectura desde el Sheet ocurre solo al cargar la página (initCloud)
+  if(!CFG_CLOUD.SHEETS_URL){ showSyncBanner('ℹ️ No hay URL de nube configurada.'); return; }
   setSyncStatus('saving');
   try{
-    const res = await fetch(CFG_CLOUD.SHEETS_URL + '?action=load&sheet=gantt');
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    const data = await res.json();
-    if(data && Array.isArray(data.tasks)){
-      applyCloudData(data);
-      saveToLocal(data);
-      setSyncStatus('synced');
-      showSyncBanner('✅ Planificación actualizada desde la nube');
-    }
+    const data = {
+      tasks, people,
+      projectTitle: document.getElementById('projectTitle')?.value || '',
+      lastUpdated: new Date().toISOString()
+    };
+    saveToLocal(data);
+    await fetch(CFG_CLOUD.SHEETS_URL, {
+      method:'POST', mode:'no-cors',
+      body: JSON.stringify({action:'save', sheet:'gantt', ...data})
+    });
+    _lastSync = data.lastUpdated;
+    setSyncStatus('synced');
+    showSyncBanner('✅ Guardado en la nube correctamente');
   } catch(e){
     setSyncStatus('error');
-    showSyncBanner('❌ Error al conectar con la nube');
+    showSyncBanner('❌ Error al guardar en la nube');
   }
 }
 
