@@ -59,7 +59,7 @@ body{font-family:'DM Sans',sans-serif;background:#f0f4fb;color:var(--text);min-h
 .panel-body{padding:16px;}
 
 /* ── SOLICITUD CARD ── */
-.sol-card{border:1.5px solid var(--border);border-radius:8px;padding:13px 14px;margin-bottom:10px;cursor:pointer;transition:border-color .15s,box-shadow .15s;position:relative;}
+.sol-card{border:1.5px solid var(--border);border-radius:8px;padding:11px 13px;margin-bottom:8px;cursor:pointer;transition:border-color .15s,box-shadow .15s;position:relative;}
 .sol-card:hover{border-color:var(--accent3);box-shadow:0 2px 8px rgba(45,91,227,.08);}
 .sol-card.selected{border-color:var(--accent2);background:#f0f5ff;box-shadow:0 0 0 3px rgba(45,91,227,.12);}
 .sol-card.procesada{border-color:var(--green);background:#f0fdf4;opacity:.7;}
@@ -141,6 +141,77 @@ body{font-family:'DM Sans',sans-serif;background:#f0f4fb;color:var(--text);min-h
 .tab{padding:7px 14px;font-size:12.5px;font-weight:600;color:var(--text3);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s;}
 .tab.on{color:var(--accent2);border-bottom-color:var(--accent2);}
 
+/* ── CONSULTA RÁPIDA — COMPACT DESKTOP ── */
+#cqPanel{background:linear-gradient(180deg,#f5f8ff 0%,#eef3fe 100%);border-color:#d4e0fb;}
+#cqPanel .panel-hd{border-bottom-color:#d9e4fc;background:rgba(255,255,255,.5);padding:9px 14px;}
+#cqPanel .panel-hd h2{font-size:13px;color:var(--accent);}
+#cqPanel .panel-body{padding:11px 13px;}
+/* altura y fuente base uniformes para todos los controles */
+.cq-h{height:28px;} /* clase auxiliar */
+.cq-field{margin-bottom:8px;}
+.cq-field label{display:block;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;line-height:1;}
+.cq-field select,.cq-field input[type=number],.cq-field input[type=date]{
+  width:100%;height:32px;
+  padding:6px 10px;
+  border:1px solid #d0dcf5;border-radius:5px;
+  font-size:13px;font-family:'DM Sans',sans-serif;
+  color:var(--text);background:#fff;color-scheme:light;
+  box-sizing:border-box;line-height:normal;
+  appearance:none;-webkit-appearance:none;
+}
+.cq-field select{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='5' viewBox='0 0 9 5'%3E%3Cpath d='M1 1l3.5 3L8 1' stroke='%2394a3b8' stroke-width='1.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 7px center;
+  padding-right:22px;cursor:pointer;
+}
+.cq-field select:focus,.cq-field input:focus{
+  outline:none;border-color:var(--accent2);
+  box-shadow:0 0 0 2px rgba(45,91,227,.1);
+}
+.cq-row2{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.cq-dur-grid{display:flex;align-items:center;gap:6px;}
+.cq-help{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:12px;height:12px;border-radius:50%;
+  background:var(--surface3);color:var(--text3);
+  font-size:8px;cursor:help;font-weight:700;vertical-align:middle;margin-left:2px;
+}
+/* Segmentado complejidad */
+.cq-seg{display:flex;gap:4px;}
+.cq-seg-btn{
+  flex:1;height:32px;
+  border:1px solid #d0dcf5;border-radius:5px;
+  background:#fff;font-size:12.5px;font-weight:600;
+  color:var(--text2);cursor:pointer;transition:all .1s;
+  font-family:'DM Sans',sans-serif;
+}
+.cq-seg-btn:hover{border-color:var(--accent3);color:var(--accent2);background:#f5f8ff;}
+/* Input numérico duración: ancho fijo */
+#cqDur{width:72px !important;flex-shrink:0;}
+/* Select unidad: ancho automático al contenido */
+.cq-unit-sel{width:auto !important;min-width:120px;max-width:160px;flex-shrink:0;}
+.cq-seg-btn.on{background:var(--accent2);color:#fff;border-color:var(--accent2);}
+/* Hint */
+.cq-hint{font-size:10px;color:var(--accent2);margin-top:2px;line-height:1.3;min-height:12px;}
+/* Botón principal */
+#cqPanel .btn.btn-primary{
+  height:34px;padding:0 14px;font-size:13px;
+  margin-top:8px;border-radius:5px;letter-spacing:.1px;
+}
+/* Intro text */
+#cqPanel .panel-body > p{font-size:11px;color:var(--text3);line-height:1.45;margin-bottom:9px;}
+/* Tarjetas resultado */
+.cq-res-card{border:1px solid #e2e8f0;border-radius:6px;padding:9px 11px;margin-bottom:6px;background:#fff;}
+.cq-res-card.best{border-color:#86efac;background:#f3fdf6;}
+.cq-res-card.alt{border-color:#e2e8f0;}
+.cq-res-badge{font-size:9px;font-weight:700;border-radius:3px;padding:1px 6px;display:inline-block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px;}
+.cq-res-badge.best{background:var(--green-bg);color:var(--green);}
+.cq-res-badge.alt{background:var(--surface2);color:var(--text2);}
+.cq-res-owner{font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:1px;}
+.cq-res-dates{font-size:11.5px;color:var(--accent2);font-weight:600;margin-bottom:2px;}
+.cq-res-note{font-size:10.5px;color:var(--text2);line-height:1.4;}
+.cq-res-card .btn.btn-primary{height:28px;font-size:12px;padding:0 10px;margin-top:7px;border-radius:4px;}
+
 /* ── GANTT MINI TABLE ── */
 .mini-table{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:8px;}
 .mini-table th{padding:5px 8px;background:var(--surface2);color:var(--text3);font-weight:700;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.4px;}
@@ -181,6 +252,75 @@ body{font-family:'DM Sans',sans-serif;background:#f0f4fb;color:var(--text);min-h
       </div>
       <div class="panel-body" id="solList">
         <div class="ia-loading"><div class="ia-spinner"></div><p>Cargando solicitudes...</p></div>
+      </div>
+    </div>
+
+    <!-- CONSULTA RÁPIDA DEL PLANIFICADOR -->
+    <div class="panel" id="cqPanel" style="margin-top:14px;">
+      <div class="panel-hd">
+        <h2>⚡ Consulta rápida del planificador</h2>
+      </div>
+      <div class="panel-body">
+        <p style="font-size:11.5px;color:var(--text2);line-height:1.5;margin-bottom:12px;">
+          Planifica una tarea propia sin pasar por solicitudes. Indica cuánto durará y, si quieres, a quién o de qué tipo es.
+        </p>
+
+        <!-- Tipo de tarea -->
+        <div class="cq-field">
+          <label>Tipo de tarea</label>
+          <select id="cqTipo" onchange="cqOnTipoChange()">
+            <option value="libre">Tarea libre (yo indico la duración)</option>
+            <option value="Desarrollo nuevo">Desarrollo nuevo (por complejidad)</option>
+            <option value="Reformulacion mayor">Reformulación mayor (por complejidad)</option>
+            <option value="Contratipo">Contratipo</option>
+            <option value="Reclamo">Reclamo</option>
+            <option value="Asistencia tecnica">Asistencia técnica</option>
+            <option value="Evaluacion sustrato">Evaluación de sustrato</option>
+            <option value="Visita cliente">Visita a cliente</option>
+          </select>
+        </div>
+
+        <!-- Complejidad (solo DN / Reformulación mayor) -->
+        <div class="cq-field" id="cqComplejidadWrap" style="display:none;">
+          <label>Complejidad</label>
+          <div class="cq-seg">
+            <button type="button" class="cq-seg-btn" data-cx="baja" onclick="cqSetComplejidad('baja')">Baja</button>
+            <button type="button" class="cq-seg-btn on" data-cx="media" onclick="cqSetComplejidad('media')">Media</button>
+            <button type="button" class="cq-seg-btn" data-cx="alta" onclick="cqSetComplejidad('alta')">Alta</button>
+          </div>
+        </div>
+
+        <!-- Duración: cantidad + unidad -->
+        <div class="cq-field">
+          <label id="cqDurLabel">Duración</label>
+          <div class="cq-dur-grid">
+            <input type="number" id="cqDur" min="1" value="10" oninput="cqDurManual=true">
+            <select id="cqDurUnit" class="cq-unit-sel" onchange="cqOnUnitChange()">
+              <option value="habiles">días hábiles</option>
+              <option value="semanas">semanas</option>
+              <option value="meses">meses</option>
+            </select>
+          </div>
+          <div class="cq-hint" id="cqDurHint"></div>
+        </div>
+
+        <!-- Responsable + fecha en dos columnas -->
+        <div class="cq-row2">
+          <div class="cq-field" style="margin-bottom:0;">
+            <label>Responsable</label>
+            <select id="cqResp">
+              <option value="">— El mejor —</option>
+            </select>
+          </div>
+          <div class="cq-field" style="margin-bottom:0;">
+            <label>Iniciar desde <span class="cq-help" title="Fecha mínima de inicio. El coordinador no propondrá fechas anteriores a esta. Útil si una tarea no puede empezar hasta que lleguen materiales, termine otra, etc. Opcional.">ⓘ</span></label>
+            <input type="date" id="cqDesde">
+          </div>
+        </div>
+
+        <button class="btn btn-primary" style="width:100%;margin-top:12px;" onclick="consultaRapida()">🔍 Consultar disponibilidad</button>
+
+        <div id="cqResultado" style="margin-top:13px;"></div>
       </div>
     </div>
   </div>
@@ -280,24 +420,38 @@ function renderLog() {
 }
 
 // ── LOAD DATA ──
+let ganttAllTasks = [];   // lista COMPLETA (para guardar sin perder hitos/archivadas)
+let dataLoaded = false;   // true solo si la última carga del Gantt fue exitosa
+
 async function reload() {
   setSyncStatus('spin');
+  dataLoaded = false;
   try {
     const [rSol, rGantt] = await Promise.all([
       fetch(SHEETS_URL + '?action=load&sheet=solicitudes').then(r => r.json()),
       fetch(SHEETS_URL + '?action=load&sheet=gantt').then(r => r.json())
     ]);
     solicitudes = Array.isArray(rSol) ? rSol : (rSol.requests || []);
-    ganttTasks = (rGantt.tasks || []).filter(t => !t.milestone && !t._archived);
+    ganttAllTasks = Array.isArray(rGantt.tasks) ? rGantt.tasks : [];
+    ganttTasks = ganttAllTasks.filter(t => !t.milestone && !t._archived);
     ganttPeople = rGantt.people || [];
+    dataLoaded = true;
     setSyncStatus('ok');
-    addLog('✅ Datos cargados — ' + solicitudes.length + ' solicitudes, ' + ganttTasks.length + ' tareas');
+    addLog('✅ Datos cargados — ' + solicitudes.length + ' solicitudes, ' + ganttTasks.length + ' tareas, ' + ganttPeople.length + ' responsables');
     renderSolicitudes();
     renderDisponibilidad();
+    poblarCqResponsables();
+    cqOnTipoChange();
   } catch (e) {
     setSyncStatus('err');
+    dataLoaded = false;
     addLog('❌ Error cargando datos: ' + e.message);
-    toast('⚠️ Error de conexión. Revisando...');
+    toast('⚠️ No se pudo conectar con el Sheet');
+    // Limpiar el spinner para que no quede pegado
+    document.getElementById('solList').innerHTML =
+      '<div class="empty-state"><div class="empty-ico">⚠️</div><p>No se pudo conectar con la nube.<br>Revisa tu conexión y pulsa <strong>↺ Actualizar</strong>.</p></div>';
+    const dp = document.getElementById('dispPanel');
+    if (dp) dp.innerHTML = '<p style="font-size:12px;color:var(--text3);">Sin conexión con el Sheet.</p>';
   }
 }
 
@@ -391,123 +545,157 @@ function renderDisponibilidad() {
   el.innerHTML = rows || '<p style="font-size:12px;color:var(--text3);">Sin responsables asignados.</p>';
 }
 
-// ── ANALIZAR CON IA ──
-async function analizarConIA() {
+// ── ANALIZAR (MOTOR LOCAL) ──
+// Duración estimada en DÍAS HÁBILES según tipo de trabajo
+const DURACIONES = {
+  'Desarrollo nuevo': 20,
+  'DN': 20,
+  'Reformulacion mayor': 15,
+  'Reformulación mayor': 15,
+  'Reformulacion intermedia': 10,
+  'Reformulación intermedia': 10,
+  'Reformulacion menor': 7,
+  'Reformulación menor': 7,
+  'Contratipo': 12,
+  'Reclamo': 7,
+  'Visita cliente': 2,
+  'Visita a cliente': 2,
+  'Asistencia tecnica': 5,
+  'Asistencia técnica': 5,
+  'AT': 5,
+  'Evaluacion sustrato': 8,
+  'Evaluación sustrato': 8,
+  'Análisis de sustrato': 8,
+  'Ensayo laboratorio': 6,
+  'Formulación': 14,
+  'Formulacion': 14
+};
+
+// Suma N días hábiles a una fecha ISO (salta sábados y domingos)
+function addDiasHabiles(startISO, n) {
+  let d = pd(startISO);
+  let restantes = n - 1; // el día de inicio cuenta como 1
+  while (restantes > 0) {
+    d = ad(d, 1);
+    const dow = d.getDay();
+    if (dow !== 0 && dow !== 6) restantes--;
+  }
+  return iso(d);
+}
+
+// Mapea el tipo de la solicitud al tipo de tarea del Gantt
+function mapearTipoGantt(sol) {
+  const t = (sol.tipo || '').toLowerCase();
+  if (t.includes('desarrollo')) return 'Desarrollo nuevo';
+  if (t.includes('asistencia')) return 'Asistencia tecnica';
+  // si la sección técnica trae un tipo más específico, úsalo
+  const tec = sol.tecnica || {};
+  if (tec.tipoSol) {
+    const ts = tec.tipoSol.toLowerCase();
+    if (ts.includes('formul')) return 'Formulación';
+    if (ts.includes('sustrato')) return 'Evaluacion sustrato';
+    if (ts.includes('ensayo')) return 'Ensayo laboratorio';
+    if (ts.includes('visita')) return 'Visita cliente';
+  }
+  return sol.tipo || 'Asistencia tecnica';
+}
+
+function analizarConIA() {
   if (!selectedSol) return;
+  const sol = selectedSol;
   const panel = document.getElementById('analisisPanel');
   panel.innerHTML = `<div class="ia-loading"><div class="ia-spinner"></div><p>Analizando disponibilidad del equipo...</p></div>`;
 
-  // Preparar contexto para la IA
-  const owners = [...new Set(ganttTasks.map(t => t.owner).filter(Boolean))];
-  const desde = new Date();
-  const hasta = ad(desde, 90);
+  // Pequeño delay para que se vea el cálculo (UX)
+  setTimeout(() => {
+    const owners = [...new Set(ganttTasks.map(t => t.owner).filter(Boolean))];
+    const tipoGantt = mapearTipoGantt(sol);
+    const duracion = DURACIONES[tipoGantt] || DURACIONES[sol.tipo] || 10;
 
-  // Resumen de ocupación por persona en próximos 90 días
-  const ocupacion = owners.map(owner => {
-    const tareas = ganttTasks.filter(t => t.owner === owner &&
-      pd(t.end) >= desde && pd(t.start) <= hasta);
-    let diasOcupados = 0;
-    tareas.forEach(t => {
-      const s = new Date(Math.max(pd(t.start).getTime(), desde.getTime()));
-      const e = new Date(Math.min(pd(t.end).getTime(), hasta.getTime()));
-      if (e > s) diasOcupados += Math.round((e - s) / 86400000);
-    });
-    const bloques = (ganttPeople.find(p => p.name === owner)?.blocks || []);
-    return {
-      nombre: owner,
-      diasOcupados,
-      pctOcupacion: Math.min(100, Math.round(diasOcupados / 90 * 100)),
-      tareaActuales: tareas.length,
-      proximaLibre: encontrarHueco(owner, 5, ganttTasks, ganttPeople),
-      bloqueados: bloques.map(b => `${b.start} a ${b.end}`).join(', ') || 'ninguno'
-    };
-  });
+    const desde = new Date();
+    const hasta = ad(desde, 90);
 
-  // Tipos de trabajo del Gantt para referencia
-  const tiposEnGantt = [...new Set(ganttTasks.map(t => t.type).filter(Boolean))];
-
-  const contextoIA = {
-    solicitud: {
-      numero: selectedSol.num,
-      solicitante: selectedSol.nombre || selectedSol.solicitante,
-      cliente: selectedSol.cliente,
-      tipo: selectedSol.tipo,
-      descripcion: selectedSol.desc,
-      estado: selectedSol.estado,
-      tecnica: selectedSol.tecnica || {}
-    },
-    equipo: ocupacion,
-    tiposDisponibles: tiposEnGantt,
-    hoy: today
-  };
-
-  try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
-        system: `Eres el coordinador del área I+D de Codelpa (empresa chilena de pinturas). 
-Tu trabajo es analizar solicitudes técnicas y proponer asignaciones al equipo.
-Responde SOLO con JSON válido, sin texto adicional ni markdown.
-El JSON debe tener exactamente esta estructura:
-{
-  "resumen": "descripción breve de la solicitud en 1-2 oraciones",
-  "duracionEstimada": número de días hábiles estimados,
-  "tipoGantt": "tipo de tarea para el Gantt (elige el más apropiado de los disponibles o sugiere uno)",
-  "propuestas": [
-    {
-      "rank": 1,
-      "responsable": "nombre del responsable",
-      "inicioSugerido": "YYYY-MM-DD",
-      "finSugerido": "YYYY-MM-DD",
-      "razon": "explicación breve de por qué esta persona y estas fechas",
-      "pctOcupacion": número entre 0-100,
-      "etiqueta": "Mejor opción" o "Alternativa"
-    }
-  ],
-  "alertas": ["alerta1", "alerta2"] // lista de alertas si hay conflictos o consideraciones importantes
-}
-Considera:
-- Elige la fecha de inicio más próxima disponible (desde hoy ${today})
-- Prioriza personas con menor % de ocupación
-- La duración depende del tipo: Desarrollo nuevo 15-30 días, Asistencia técnica 3-7 días, Formulación 10-20 días, Reclamo 5-10 días
-- Sugiere máximo 2-3 propuestas
-- Las fechas deben ser reales (no en fin de semana si es posible)`,
-        messages: [{
-          role: 'user',
-          content: `Analiza esta solicitud y propone asignación:\n${JSON.stringify(contextoIA, null, 2)}`
-        }]
-      })
-    });
-
-    const data = await resp.json();
-    const raw = data.content?.[0]?.text || '{}';
-    let analisis;
-    try {
-      analisis = JSON.parse(raw.replace(/```json|```/g, '').trim());
-    } catch (e) {
-      throw new Error('Respuesta IA no válida: ' + raw.slice(0, 100));
+    if (!owners.length) {
+      renderAnalisis({
+        resumen: sol.desc || 'Solicitud sin descripción.',
+        duracionEstimada: duracion,
+        tipoGantt,
+        propuestas: [],
+        alertas: ['No hay responsables registrados en el Gantt. Agrega personas primero.']
+      });
+      return;
     }
 
-    addLog(`🤖 IA analizó solicitud ${selectedSol.num} — ${(analisis.propuestas || []).length} propuestas`);
-    renderAnalisis(analisis);
+    // Calcular para cada responsable
+    const candidatos = owners.map(owner => {
+      const tareas = ganttTasks.filter(t => t.owner === owner &&
+        pd(t.end) >= desde && pd(t.start) <= hasta);
+      let diasOcupados = 0;
+      tareas.forEach(t => {
+        const s = new Date(Math.max(pd(t.start).getTime(), desde.getTime()));
+        const e = new Date(Math.min(pd(t.end).getTime(), hasta.getTime()));
+        if (e > s) diasOcupados += Math.round((e - s) / 86400000);
+      });
+      const pctOcupacion = Math.min(100, Math.round(diasOcupados / 90 * 100));
+      const inicioSugerido = encontrarHueco(owner, Math.ceil(duracion * 1.4), ganttTasks, ganttPeople);
+      const finSugerido = addDiasHabiles(inicioSugerido, duracion);
 
-  } catch (e) {
-    addLog('❌ Error IA: ' + e.message);
-    panel.innerHTML = `<div class="panel-body">
-      <div style="color:var(--red);font-size:13px;padding:16px;background:var(--red-bg);border-radius:8px;">
-        ⚠️ No se pudo conectar con el analizador IA.<br>
-        <span style="font-size:11.5px;color:#7f1d1d;margin-top:4px;display:block;">${e.message}</span>
-      </div>
-      <div style="margin-top:12px;">
-        <div class="disp-title" style="margin-bottom:8px;">Disponibilidad manual del equipo</div>
-        ${renderDisponibilidadManual()}
-      </div>
-    </div>`;
-  }
+      // ¿Tiene bloqueos en el período propuesto?
+      const person = ganttPeople.find(p => p.name === owner);
+      const blocks = (person?.blocks || []);
+      const haySolape = blocks.some(b =>
+        pd(b.start) <= pd(finSugerido) && pd(b.end) >= pd(inicioSugerido));
+
+      return { owner, pctOcupacion, inicioSugerido, finSugerido, tareaActuales: tareas.length, haySolape };
+    });
+
+    // Ordenar: menor ocupación primero, luego inicio más próximo
+    candidatos.sort((a, b) => {
+      if (a.pctOcupacion !== b.pctOcupacion) return a.pctOcupacion - b.pctOcupacion;
+      return pd(a.inicioSugerido) - pd(b.inicioSugerido);
+    });
+
+    const top = candidatos.slice(0, 3);
+    const propuestas = top.map((c, i) => {
+      let razon;
+      if (i === 0) {
+        razon = `${c.owner} tiene la menor carga del equipo (${c.pctOcupacion}% en 90 días) y puede comenzar el ${fd(c.inicioSugerido)}.`;
+      } else {
+        razon = `Alternativa: ${c.owner} (${c.pctOcupacion}% ocupado), disponible desde el ${fd(c.inicioSugerido)}.`;
+      }
+      if (c.haySolape) razon += ' ⚠️ Tiene un período bloqueado que se solapa — revisar.';
+      return {
+        rank: i + 1,
+        responsable: c.owner,
+        inicioSugerido: c.inicioSugerido,
+        finSugerido: c.finSugerido,
+        razon,
+        pctOcupacion: c.pctOcupacion,
+        etiqueta: i === 0 ? '★ Mejor opción' : 'Alternativa'
+      };
+    });
+
+    // Alertas
+    const alertas = [];
+    if (candidatos.every(c => c.pctOcupacion > 80)) {
+      alertas.push('Todo el equipo está con alta carga (>80%). Considera reprogramar otras tareas.');
+    }
+    if (top[0] && top[0].haySolape) {
+      alertas.push(`${top[0].owner} tiene un período de no disponibilidad que cruza las fechas propuestas.`);
+    }
+
+    renderAnalisis({
+      resumen: sol.desc || `Solicitud de ${sol.tipo || 'tipo no especificado'}${sol.cliente ? ' para ' + sol.cliente : ''}.`,
+      duracionEstimada: duracion,
+      tipoGantt,
+      propuestas,
+      alertas
+    });
+
+    addLog(`🔍 Analizada ${sol.num} — ${propuestas.length} propuestas (motor local)`);
+  }, 350);
 }
+
 
 function renderAnalisis(a) {
   const panel = document.getElementById('analisisPanel');
@@ -581,6 +769,10 @@ function selectProp(idx, prop, analisis) {
 // ── CONFIRMAR ASIGNACIÓN ──
 async function confirmarAsignacion() {
   if (!selectedSol || !selectedProp) return;
+  if (!dataLoaded) {
+    toast('⚠️ Primero debe cargar los datos. Pulsa ↺ Actualizar.');
+    return;
+  }
   const btn = document.getElementById('btnConfirmar');
   btn.disabled = true;
   btn.textContent = '⏳ Guardando...';
@@ -623,15 +815,16 @@ async function confirmarAsignacion() {
     _ganttId: nuevaTarea.id
   };
 
-  // Actualizar en memoria
+  // Actualizar en memoria (ambas listas)
+  ganttAllTasks.push(nuevaTarea);
   ganttTasks.push(nuevaTarea);
   const idx = solicitudes.findIndex(s => s.num === sol.num);
   if (idx >= 0) solicitudes[idx] = solActualizada;
 
   try {
-    // 3. Guardar Gantt
+    // 3. Guardar Gantt (lista completa, sin perder hitos/archivadas)
     const ganttData = {
-      tasks: ganttTasks,
+      tasks: ganttAllTasks,
       people: ganttPeople,
       projectTitle: '',
       lastUpdated: new Date().toISOString()
@@ -649,8 +842,8 @@ async function confirmarAsignacion() {
       body: JSON.stringify({ action: 'save', sheet: 'solicitudes', requests: solicitudes })
     });
 
-    addLog(`✅ Solicitud ${sol.num} asignada a ${prop.responsable} — Gantt actualizado`);
-    toast('✅ Tarea agregada al Gantt · Solicitud actualizada a "En plan"');
+    addLog(`📤 Solicitud ${sol.num} enviada al Gantt → ${prop.responsable}`);
+    toast('📤 Enviado. Verifica en el Gantt al recargarlo.');
 
     // Actualizar UI
     selectedSol = solActualizada;
@@ -730,6 +923,236 @@ function renderDisponibilidadManual() {
       <div class="person-pct">${pct}%</div>
     </div>`;
   }).join('') || '<p style="font-size:12px;color:var(--text3);">Sin responsables en Gantt.</p>';
+}
+
+// ── CONSULTA RÁPIDA DEL PLANIFICADOR ──
+// Complejidad → meses (precarga editable)
+const COMPLEJIDAD_MESES = { baja: 2, media: 6, alta: 12 };
+let cqComplejidad = 'media';
+let cqDurManual = false; // true si el usuario editó la duración a mano
+
+// Conversión a días hábiles según unidad
+function aDiasHabiles(cantidad, unidad) {
+  if (unidad === 'meses') return Math.round(cantidad * 21);   // ~21 hábiles/mes
+  if (unidad === 'semanas') return Math.round(cantidad * 5);  // 5 hábiles/semana
+  return Math.round(cantidad);                                 // ya es días hábiles
+}
+function etiquetaUnidad(unidad) {
+  return unidad === 'meses' ? 'meses' : unidad === 'semanas' ? 'semanas' : 'días hábiles';
+}
+
+function poblarCqResponsables() {
+  const sel = document.getElementById('cqResp');
+  if (!sel) return;
+  const owners = [...new Set(ganttPeople.map(p => p.name).filter(Boolean))];
+  // si no hay people, caer a owners de tareas
+  const lista = owners.length ? owners : [...new Set(ganttTasks.map(t => t.owner).filter(Boolean))];
+  const actual = sel.value;
+  sel.innerHTML = '<option value="">— El mejor —</option>' +
+    lista.map(o => `<option value="${esc(o)}">${esc(o)}</option>`).join('');
+  if (actual) sel.value = actual;
+}
+
+function cqOnUnitChange() {
+  cqDurManual = true; // si cambia unidad manualmente, respeta su número
+  cqActualizarHint();
+}
+
+function cqOnTipoChange() {
+  const tipo = document.getElementById('cqTipo').value;
+  const esComplejo = (tipo === 'Desarrollo nuevo' || tipo === 'Reformulacion mayor');
+  document.getElementById('cqComplejidadWrap').style.display = esComplejo ? '' : 'none';
+  cqDurManual = false;
+
+  const durInput = document.getElementById('cqDur');
+  const durUnit = document.getElementById('cqDurUnit');
+
+  if (esComplejo) {
+    // Complejidad precarga MESES
+    durUnit.value = 'meses';
+    cqSetComplejidad(cqComplejidad, true);
+  } else {
+    // Tipos simples: días hábiles sugeridos
+    durUnit.value = 'habiles';
+    const sugeridos = { 'libre': 10, 'Contratipo': 12, 'Reclamo': 7, 'Asistencia tecnica': 5, 'Evaluacion sustrato': 8, 'Visita cliente': 2 };
+    durInput.value = sugeridos[tipo] || 10;
+    cqActualizarHint();
+  }
+}
+
+function cqSetComplejidad(cx, silent) {
+  cqComplejidad = cx;
+  document.querySelectorAll('.cq-seg-btn').forEach(b => b.classList.toggle('on', b.dataset.cx === cx));
+  const meses = COMPLEJIDAD_MESES[cx];
+  const durInput = document.getElementById('cqDur');
+  const durUnit = document.getElementById('cqDurUnit');
+  if (!cqDurManual || silent) {
+    durInput.value = meses;
+    durUnit.value = 'meses';
+    cqDurManual = false;
+  }
+  cqActualizarHint(cx);
+}
+
+function cqActualizarHint(cx) {
+  const hint = document.getElementById('cqDurHint');
+  const cantidad = parseFloat(document.getElementById('cqDur').value) || 0;
+  const unidad = document.getElementById('cqDurUnit').value;
+  const dh = aDiasHabiles(cantidad, unidad);
+  if (cx) {
+    hint.textContent = `Complejidad ${cx}: ${COMPLEJIDAD_MESES[cx]} meses sugeridos. Editable. (≈ ${dh} días hábiles)`;
+  } else if (unidad !== 'habiles') {
+    hint.textContent = `≈ ${dh} días hábiles`;
+  } else {
+    hint.textContent = '';
+  }
+}
+
+function consultaRapida() {
+  const tipo = document.getElementById('cqTipo').value;
+  const respElegido = document.getElementById('cqResp').value;
+  const desdeVal = document.getElementById('cqDesde').value;
+  const cantidad = parseFloat(document.getElementById('cqDur').value) || 0;
+  const unidad = document.getElementById('cqDurUnit').value;
+
+  if (cantidad <= 0) { toast('⚠️ Indica una duración válida'); return; }
+  if (!dataLoaded) { toast('⚠️ Primero carga los datos. Pulsa ↺ Actualizar.'); return; }
+
+  const durDiasHab = aDiasHabiles(cantidad, unidad);
+
+  const owners = [...new Set(ganttPeople.map(p => p.name).filter(Boolean))];
+  const lista = owners.length ? owners : [...new Set(ganttTasks.map(t => t.owner).filter(Boolean))];
+  if (!lista.length) {
+    document.getElementById('cqResultado').innerHTML =
+      '<div class="cq-res-card"><div class="cq-res-note">No hay responsables configurados en el Gantt todavía. Cárgalos desde el Gantt (botón ⚙️ Cargar equipo Codelpa).</div></div>';
+    return;
+  }
+
+  const desde = new Date();
+  const hasta = ad(desde, 400);
+  const minInicio = desdeVal ? pd(desdeVal) : null;
+
+  // Calcular ocupación + hueco para cada persona
+  function evaluar(owner) {
+    const tareas = ganttTasks.filter(t => t.owner === owner && pd(t.end) >= desde && pd(t.start) <= hasta);
+    let diasOcupados = 0;
+    tareas.forEach(t => {
+      const s = new Date(Math.max(pd(t.start).getTime(), desde.getTime()));
+      const e = new Date(Math.min(pd(t.end).getTime(), ad(desde, 90).getTime()));
+      if (e > s) diasOcupados += Math.round((e - s) / 86400000);
+    });
+    const pctOcupacion = Math.min(100, Math.round(diasOcupados / 90 * 100));
+    let inicio = encontrarHueco(owner, Math.ceil(durDiasHab * 1.4), ganttTasks, ganttPeople);
+    if (minInicio && pd(inicio) < minInicio) {
+      inicio = encontrarHuecoDesde(owner, Math.ceil(durDiasHab * 1.4), minInicio);
+    }
+    const fin = addDiasHabiles(inicio, durDiasHab);
+    return { owner, pctOcupacion, inicio, fin };
+  }
+
+  let html = '';
+  const durLabel = unidad === 'habiles'
+    ? `${durDiasHab} días hábiles`
+    : `${cantidad} ${etiquetaUnidad(unidad)} (≈${durDiasHab} días háb.)`;
+
+  if (respElegido) {
+    // Consulta por persona específica → mostrar su hueco + alternativa
+    const elegido = evaluar(respElegido);
+    html += tarjetaResultado(elegido, 'best', `Asignación a ${respElegido}`, durLabel, tipo);
+
+    // Alternativa: el más libre que NO sea el elegido
+    const otros = lista.filter(o => o !== respElegido).map(evaluar)
+      .sort((a, b) => a.pctOcupacion - b.pctOcupacion || pd(a.inicio) - pd(b.inicio));
+    if (otros.length && (elegido.pctOcupacion > 60 || pd(otros[0].inicio) < pd(elegido.inicio))) {
+      html += `<div style="font-size:11px;color:var(--text3);margin:10px 0 6px;font-weight:600;">Alternativa más libre:</div>`;
+      html += tarjetaResultado(otros[0], 'alt', 'Alternativa', durLabel, tipo);
+    }
+  } else {
+    // El mejor disponible → ordenar por carga
+    const ranking = lista.map(evaluar)
+      .sort((a, b) => a.pctOcupacion - b.pctOcupacion || pd(a.inicio) - pd(b.inicio));
+    ranking.slice(0, 3).forEach((r, i) => {
+      html += tarjetaResultado(r, i === 0 ? 'best' : 'alt',
+        i === 0 ? '★ Mejor opción' : 'Alternativa', durLabel, tipo);
+    });
+  }
+
+  document.getElementById('cqResultado').innerHTML = html;
+  addLog(`⚡ Consulta rápida: ${durLabel}${respElegido ? ' → ' + respElegido : ''}`);
+}
+
+function tarjetaResultado(r, cls, badge, durLabel, tipo) {
+  const tipoTarea = tipo === 'libre' ? 'Tarea' : tipo;
+  const payload = {
+    owner: r.owner, inicio: r.inicio, fin: r.fin,
+    tipo: tipoTarea, durLabel
+  };
+  return `<div class="cq-res-card ${cls}">
+    <div class="cq-res-badge ${cls}">${badge}</div>
+    <div class="cq-res-owner">👤 ${esc(r.owner)}</div>
+    <div class="cq-res-dates">📅 ${fd(r.inicio)} → ${fd(r.fin)}</div>
+    <div class="cq-res-note">Ocupación actual: ${r.pctOcupacion}% · Duración: ${durLabel}</div>
+    <button class="btn btn-primary" style="width:100%;margin-top:9px;font-size:12px;padding:6px;"
+      onclick='cqAgregarGantt(${JSON.stringify(payload).replace(/'/g, "&#39;")})'>➕ Agregar al Gantt</button>
+  </div>`;
+}
+
+// Variante de encontrarHueco que arranca desde una fecha mínima
+function encontrarHuecoDesde(owner, duracion, fechaMin) {
+  const ownerTasks = ganttTasks.filter(t => t.owner === owner && pd(t.end) >= fechaMin)
+    .sort((a, b) => pd(a.start) - pd(b.start));
+  const person = ganttPeople.find(p => p.name === owner);
+  const blocks = (person?.blocks || []).map(b => ({ s: pd(b.start), e: pd(b.end) }));
+  const isBloq = d => blocks.some(b => d >= b.s && d <= b.e);
+  let cursor = new Date(fechaMin); cursor.setHours(12, 0, 0, 0);
+  for (let i = 0; i < 365; i++) {
+    if (cursor.getDay() === 0 || cursor.getDay() === 6 || isBloq(cursor)) { cursor = ad(cursor, 1); continue; }
+    const end = ad(cursor, duracion);
+    const overlap = ownerTasks.some(t => pd(t.start) <= end && pd(t.end) >= cursor);
+    if (!overlap) return iso(cursor);
+    cursor = ad(cursor, 1);
+  }
+  return iso(fechaMin);
+}
+
+// Agregar tarea de consulta rápida directo al Gantt
+async function cqAgregarGantt(p) {
+  if (!dataLoaded) {
+    toast('⚠️ Primero debe cargar el Gantt. Pulsa ↺ Actualizar.');
+    return;
+  }
+  const nuevaTarea = {
+    id: uid(),
+    name: p.tipo === 'Tarea' ? 'Tarea planificada' : p.tipo,
+    start: p.inicio,
+    end: p.fin,
+    type: (p.tipo === 'Tarea' ? 'Asistencia tecnica' : p.tipo),
+    owner: p.owner,
+    pct: 0, color: 'blue', milestone: false, deps: [], subtasks: [], _exp: false,
+    realStart: '', realEnd: '', stopped: false, stopReason: '', stoppedLog: [],
+    client: '', description: `Planificada vía consulta rápida (${p.durLabel})`
+  };
+  // Agregar a AMBAS listas: completa (para guardar) y filtrada (para análisis)
+  ganttAllTasks.push(nuevaTarea);
+  ganttTasks.push(nuevaTarea);
+  try {
+    await fetch(SHEETS_URL, {
+      method: 'POST', mode: 'no-cors',
+      body: JSON.stringify({
+        action: 'save', sheet: 'gantt',
+        tasks: ganttAllTasks, people: ganttPeople,
+        projectTitle: '', lastUpdated: new Date().toISOString()
+      })
+    });
+    addLog(`📤 Tarea enviada al Gantt: ${p.owner} (${fd(p.inicio)} → ${fd(p.fin)})`);
+    toast('📤 Tarea enviada. Verifica en el Gantt al recargarlo.');
+    renderDisponibilidad();
+  } catch (e) {
+    ganttAllTasks.pop();
+    ganttTasks.pop();
+    addLog('❌ Error al enviar: ' + e.message);
+    toast('⚠️ Error al guardar. Intenta de nuevo.');
+  }
 }
 
 // ── INIT ──

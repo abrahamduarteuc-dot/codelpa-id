@@ -1240,6 +1240,9 @@ canvas{display:block;max-width:100%;}
         <button class="bsav" style="padding:8px 13px;white-space:nowrap" onclick="addPerson()">＋ Agregar</button>
       </div>
     </div>
+    <div style="margin-top:14px;padding-top:13px;border-top:1px dashed var(--border2)">
+      <button onclick="setupEquipoCodelpa()" style="width:100%;padding:9px;border:1px solid var(--border2);border-radius:8px;background:var(--surface2);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit" title="Reemplaza todo por el equipo Codelpa con correos">⚙️ Cargar equipo Codelpa (5 responsables con correo)</button>
+    </div>
     <div class="mact"><button class="bcnl" onclick="closePeopleModal()">Cerrar</button></div>
   </div>
 </div>
@@ -4233,23 +4236,33 @@ document.addEventListener('keydown',e=>{
 });
 
 // ── DEMO ──
+// Equipo real de Codelpa I+D
+const EQUIPO_CODELPA=[
+  {name:'Alexis Gómez',email:'agomez@codelpa.cl',blocks:[]},
+  {name:'Katherine Rojas',email:'krojas@codelpa.cl',blocks:[]},
+  {name:'Jenniffer Larena',email:'llarena@codelpa.cl',blocks:[]},
+  {name:'Iván Moller',email:'imoller@codelpa.cl',blocks:[]},
+  {name:'Abraham Duarte',email:'aduarte@codelpa.cl',blocks:[]},
+];
 function loadDemo(){
-  const b=new Date(today);b.setDate(b.getDate()-10);
-  function d(n){return iso(ad(b,n));}
-  const base={milestone:false,deps:[],stopped:false,stopReason:'',stoppedLog:[],_exp:false};
-  tasks=[
-    {...base,id:'t1',name:'Levantamiento de requisitos',type:'Asistencia tecnica',start:d(0),end:d(7),pct:100,color:'green',owner:'Ana Pérez',realStart:d(0),realEnd:d(6),
-     subtasks:[{name:'Reunión inicial',owner:'Ana Pérez',start:d(0),end:d(1),done:true,realStart:d(0),realEnd:d(1),stopped:false,stopReason:'',stoppedLog:[],deps:[]},{name:'Documentar reqs',owner:'Ana Pérez',start:d(2),end:d(5),done:true,realStart:d(2),realEnd:d(5),stopped:false,stopReason:'',stoppedLog:[],deps:[]},{name:'Validación cliente',owner:'Ana Pérez',start:d(6),end:d(7),done:true,realStart:d(6),realEnd:d(6),stopped:false,stopReason:'',stoppedLog:[],deps:[]}]},
-    {...base,id:'t2',name:'Diseño de arquitectura',type:'Desarrollo nuevo',start:d(8),end:d(18),pct:50,color:'blue',owner:'Carlos Ruiz',realStart:d(8),realEnd:'',
-     subtasks:[{name:'Diagrama componentes',owner:'Carlos Ruiz',start:d(8),end:d(12),done:true,realStart:d(8),realEnd:'',stopped:false,stopReason:'',stoppedLog:[],deps:[]},{name:'Diseño BD',owner:'Carlos Ruiz',start:d(13),end:d(18),done:false,realStart:'',realEnd:'',stopped:false,stopReason:'',stoppedLog:[],deps:[]}]},
-    {...base,id:'t3',name:'Desarrollo módulo A',type:'Desarrollo nuevo',start:d(19),end:d(35),pct:40,color:'blue',owner:'Luis V.',realStart:d(19),realEnd:'',subtasks:[]},
-    {...base,id:'t4',name:'Desarrollo módulo B',type:'Reformulacion mayor',start:d(19),end:d(40),pct:20,color:'teal',owner:'María G.',realStart:'',realEnd:'',subtasks:[]},
-    {...base,id:'t5',name:'Pruebas integración',type:'Asistencia tecnica',start:d(41),end:d(52),pct:0,color:'orange',owner:'Ana Pérez',realStart:'',realEnd:'',subtasks:[]},
-    {...base,id:'t6',name:'Capacitación usuarios',type:'Visita cliente',start:d(53),end:d(60),pct:0,color:'purple',owner:'Carlos Ruiz',realStart:'',realEnd:'',subtasks:[]},
-    {...base,id:'t7',name:'Lanzamiento producción',type:'Contratipo',start:d(61),end:d(65),pct:0,color:'green',owner:'Luis V.',realStart:'',realEnd:'',subtasks:[]},
-  ];
-  document.getElementById('projectTitle').value='Proyecto Demo — Sistema de Gestión';
-  syncPeople();refreshOwnerSels();refreshTypeSels();renderAll();
+  // Estado inicial limpio: equipo real de Codelpa, sin tareas
+  tasks=[];
+  people=EQUIPO_CODELPA.map(p=>({name:p.name,email:p.email,blocks:[]}));
+  const pt=document.getElementById('projectTitle');if(pt)pt.value='Planificación I+D Codelpa';
+  refreshOwnerSels();refreshTypeSels();renderAll();
+}
+// Reconfigurar equipo real (botón en modal de Responsables)
+function setupEquipoCodelpa(){
+  const tieneData=tasks.length>0;
+  const msg=tieneData
+    ? 'Esto reemplazará TODAS las tareas y responsables actuales por el equipo Codelpa (sin tareas).\n\n¿Continuar? Esta acción no se puede deshacer.'
+    : 'Se cargará el equipo Codelpa (5 responsables con correo). ¿Continuar?';
+  if(!confirm(msg))return;
+  tasks=[];
+  people=EQUIPO_CODELPA.map(p=>({name:p.name,email:p.email,blocks:[]}));
+  refreshOwnerSels();refreshTypeSels();renderPList();renderAll();
+  if(typeof persistChanges==='function')persistChanges();
+  alert('✅ Equipo Codelpa configurado y guardado en la nube.');
 }
 
 // ── TAB SWITCHING ──
