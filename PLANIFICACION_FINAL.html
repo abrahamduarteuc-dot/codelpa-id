@@ -779,7 +779,6 @@ canvas{display:block;max-width:100%;}
   </button>
   <div style="display:flex;align-items:center;gap:5px">
     <button onclick="cloudSave()" title="Guardar en la nube" style="display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;color:var(--text2);transition:.15s" onmouseenter="this.style.background='var(--border)'" onmouseleave="this.style.background='var(--surface2)'"><span id="syncDot" style="width:8px;height:8px;border-radius:50%;background:#9aa3b2;flex-shrink:0;transition:background .3s" title="Estado sincronización"></span>☁️ Nube</button>
-    <button onclick="cloudPull()" title="Traer cambios desde la nube (solicitudes asignadas, etc.)" style="display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;color:var(--text2);transition:.15s" onmouseenter="this.style.background='var(--border)'" onmouseleave="this.style.background='var(--surface2)'">⬇️ Traer</button>
     <button onclick="activateTVMode()" title="Activar modo TV/presentación" style="display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;color:var(--text2);transition:.15s" onmouseenter="this.style.background='var(--border)'" onmouseleave="this.style.background='var(--surface2)'">📺 TV</button>
   </div>
   <div class="sep"></div>
@@ -4262,7 +4261,7 @@ function setupEquipoCodelpa(){
   tasks=[];
   people=EQUIPO_CODELPA.map(p=>({name:p.name,email:p.email,blocks:[]}));
   refreshOwnerSels();refreshTypeSels();renderPList();renderAll();
-  if(typeof persistChanges==='function')persistChanges();
+  if(typeof cloudSave==='function')cloudSave();
   alert('✅ Equipo Codelpa configurado y guardado en la nube.');
 }
 
@@ -5856,11 +5855,11 @@ async function initCloud(){
         setSyncStatus('synced');
         return;
       }
-      // Sheet connected but empty — load demo and save it as first state
+      // Sheet connected but empty — load equipo and save it as first state
       setSyncStatus('synced');
-      showSyncBanner('☁️ Nube conectada — cargando datos de ejemplo');
+      showSyncBanner('☁️ Nube conectada — cargando equipo inicial');
       loadDemo();
-      persistChanges(); // save demo to cloud so next load has data
+      cloudSave(); // guardar estado inicial a la nube
       return;
     } catch(e){
       console.warn('Nube no disponible, cargando desde respaldo local:', e.message);
@@ -6032,30 +6031,47 @@ function tvShowNotification(notifs){
 })();
 
 // ── CLOUD: PERSIST ──
+// Indicador de cambios sin guardar en la nube
+let _cambiosPendientes = false;
+
 async function persistChanges(){
   const data = {
     tasks, people,
     projectTitle: document.getElementById('projectTitle')?.value || '',
     lastUpdated: new Date().toISOString()
   };
-  saveToLocal(data);
+  saveToLocal(data); // respaldo local siempre
 
-  if(!CFG_CLOUD.SHEETS_URL || !CFG_CLOUD.AUTO_SAVE) return;
-  setSyncStatus('saving');
-  try{
-    await fetch(CFG_CLOUD.SHEETS_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      body: JSON.stringify({action:'save', sheet:'gantt', ...data})
-    });
-    // Con no-cors la respuesta es opaca: si no hubo error de red, asumimos guardado OK
-    _lastSync = data.lastUpdated;
-    setSyncStatus('synced');
-  } catch(e){
-    console.warn('No se pudo guardar en la nube:', e.message);
-    setSyncStatus('error');
+  // Ya NO se escribe automáticamente al Sheet.
+  // El guardado a la nube es manual con el botón ☁️ (cloudSave).
+  // Aquí solo marcamos que hay cambios pendientes de subir.
+  _cambiosPendientes = true;
+  setSyncStatus('pending');
+  actualizarAvisoPendiente();
+}
+
+// Banner fijo que avisa cuando hay cambios sin guardar (y que la vista no se auto-actualiza)
+function actualizarAvisoPendiente(){
+  if(document.body.classList.contains('tv-mode')) return; // no en modo TV
+  let bar = document.getElementById('pendingBar');
+  if(_cambiosPendientes){
+    if(!bar){
+      bar = document.createElement('div');
+      bar.id = 'pendingBar';
+      bar.style.cssText = 'position:fixed;top:54px;left:50%;transform:translateX(-50%);z-index:500;'
+        + 'background:#fef3c7;border:1.5px solid #f59e0b;color:#92400e;'
+        + 'padding:8px 16px;border-radius:0 0 12px 12px;font-family:DM Sans,sans-serif;font-size:12.5px;font-weight:600;'
+        + 'box-shadow:0 4px 16px rgba(0,0,0,.12);display:flex;align-items:center;gap:12px;';
+      bar.innerHTML = '<span>⚠️ Cambios sin guardar — la vista no se actualiza sola</span>'
+        + '<button onclick="cloudSave()" style="background:#f59e0b;color:#fff;border:none;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">☁️ Guardar ahora</button>';
+      document.body.appendChild(bar);
+    }
+  } else {
+    if(bar) bar.remove();
   }
 }
+
+function saveToLocalOnly(){ /* alias por compatibilidad */ }
 
 function saveToLocal(data){
   try{ localStorage.setItem(LS_DATA, JSON.stringify(data)); }
@@ -6098,17 +6114,6 @@ async function cloudLoad(_esReintento){
   }
 }
 
-// ── CLOUD: TRAER cambios desde el Sheet (botón ⬇️ Traer) ──
-async function cloudPull(){
-  if(!CFG_CLOUD.SHEETS_URL){ showSyncBanner('ℹ️ No hay URL de nube configurada.'); return; }
-  const hayTrabajo = (tasks && tasks.length > 0);
-  if(hayTrabajo){
-    if(!confirm('Esto traerá la última versión guardada en la nube (incluye tareas asignadas desde el Coordinador).\n\nSe reemplazará lo que ves en pantalla por lo de la nube. ¿Continuar?')) return;
-  }
-  await cloudLoad();
-  showSyncBanner('⬇️ Cambios traídos desde la nube');
-}
-
 // ── CLOUD: GUARDAR manualmente (botón ☁️ Nube) ──
 async function cloudSave(){
   // En modo TV el botón nunca escribe — solo relee (TV es solo lectura)
@@ -6130,7 +6135,9 @@ async function cloudSave(){
       body: JSON.stringify({action:'save', sheet:'gantt', ...data})
     });
     _lastSync = data.lastUpdated;
+    _cambiosPendientes = false;
     setSyncStatus('synced');
+    actualizarAvisoPendiente();
     showSyncBanner('✅ Guardado en la nube correctamente');
   } catch(e){
     setSyncStatus('error');
@@ -6146,6 +6153,7 @@ function setSyncStatus(st){
   const cfg = {
     synced:  {color:'#16a05c', title:'Sincronizado con la nube · '+new Date().toLocaleTimeString('es-CL')},
     saving:  {color:'#f59e0b', title:'Guardando...'},
+    pending: {color:'#f59e0b', title:'⚠️ Tienes cambios sin guardar — pulsa ☁️ Nube para guardar'},
     local:   {color:'#9aa3b2', title:'Modo local (sin conexión a nube)'},
     error:   {color:'#dc2626', title:'Error de sincronización — datos guardados localmente'}
   };
@@ -6264,6 +6272,32 @@ initCloud(); // loads from cloud or localStorage, then calls loadDemo as fallbac
 applyColWidths();
 applySubColWidths();
 window.addEventListener('resize',()=>{ applyColWidths(); });
+
+// Avisar si hay cambios sin guardar al cerrar/recargar (solo en modo edición)
+window.addEventListener('beforeunload', function(e){
+  if(_cambiosPendientes && !document.body.classList.contains('tv-mode')){
+    e.preventDefault();
+    e.returnValue = ''; // requerido por algunos navegadores para mostrar el aviso
+    return '';
+  }
+});
+
+// ── AUTO-REFRESH CONTROLADO (Gantt principal) ──
+// Lee del Sheet cada 2 min SOLO si no hay cambios sin guardar y no se está editando.
+// Así el Gantt ve lo que escribe el Coordinador, sin pisar tu trabajo ni auto-guardar.
+(function(){
+  const REFRESH_MIN = (typeof CFG_CLOUD!=='undefined' && CFG_CLOUD.TV_REFRESH_MIN) ? CFG_CLOUD.TV_REFRESH_MIN : 2;
+  setInterval(function(){
+    // No refrescar en modo TV (tiene su propio ciclo)
+    if(document.body.classList.contains('tv-mode')) return;
+    // No refrescar si hay cambios sin guardar (protege tu edición)
+    if(_cambiosPendientes) return;
+    // No refrescar si hay algún modal/formulario abierto (estás editando)
+    if(document.querySelector('.ov.open, #confirmOv.open')) return;
+    // Todo tranquilo → traer lo último del Sheet
+    cloudLoad();
+  }, REFRESH_MIN * 60 * 1000);
+})();
 </script>
 <div class="kpi-tip" id="kpiTip"></div>
 <div id="daysOverlay"><span>Días hábiles:</span><input type="number" id="daysInput" min="1" max="999" placeholder="ej: 20" onkeydown="if(event.key==='Enter')applyDays()"></div>
