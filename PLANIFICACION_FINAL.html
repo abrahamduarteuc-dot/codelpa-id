@@ -779,6 +779,7 @@ canvas{display:block;max-width:100%;}
   </button>
   <div style="display:flex;align-items:center;gap:5px">
     <button onclick="cloudSave()" title="Guardar en la nube" style="display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;color:var(--text2);transition:.15s" onmouseenter="this.style.background='var(--border)'" onmouseleave="this.style.background='var(--surface2)'"><span id="syncDot" style="width:8px;height:8px;border-radius:50%;background:#9aa3b2;flex-shrink:0;transition:background .3s" title="Estado sincronización"></span>☁️ Nube</button>
+    <button onclick="cloudPull()" title="Traer cambios desde la nube (solicitudes asignadas, etc.)" style="display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;color:var(--text2);transition:.15s" onmouseenter="this.style.background='var(--border)'" onmouseleave="this.style.background='var(--surface2)'">⬇️ Traer</button>
     <button onclick="activateTVMode()" title="Activar modo TV/presentación" style="display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;color:var(--text2);transition:.15s" onmouseenter="this.style.background='var(--border)'" onmouseleave="this.style.background='var(--surface2)'">📺 TV</button>
   </div>
   <div class="sep"></div>
@@ -5898,9 +5899,42 @@ function applyCloudData(data){
 // ── TV NOTIFICATIONS ──
 // Snapshot del estado anterior para detectar cambios
 let _tvSnapshot = null;
+let _tvSolSnapshot = null; // snapshot de solicitudes para detectar nuevas
 
 function tvTakeSnapshot(){
   _tvSnapshot = (tasks||[]).map(t=>({id:t.id, name:t.name, owner:t.owner, estado:t.estado||'', pct:t.pct||0}));
+}
+
+function tvTakeSolSnapshot(sols){
+  _tvSolSnapshot = (sols||[]).map(s=>({num:s.num, estado:s.estado}));
+}
+
+// Detecta solicitudes NUEVAS (pendientes) leídas del Sheet en modo TV
+async function tvCheckSolicitudes(){
+  if(!document.body.classList.contains('tv-mode') || !CFG_CLOUD.SHEETS_URL) return;
+  try{
+    const res = await fetch(CFG_CLOUD.SHEETS_URL + '?action=load&sheet=solicitudes&_t=' + Date.now());
+    if(!res.ok) return;
+    const data = await res.json();
+    const sols = Array.isArray(data) ? data : (data.requests || []);
+    if(_tvSolSnapshot === null){ tvTakeSolSnapshot(sols); return; } // primera vez: solo memoriza
+    // Detectar solicitudes nuevas en estado Pendiente
+    const nuevas = sols.filter(s => {
+      const old = _tvSolSnapshot.find(o => o.num === s.num);
+      return !old && s.estado === 'Pendiente';
+    });
+    if(nuevas.length){
+      const notifs = nuevas.map(s => ({
+        tipo: 'solicitud',
+        tarea: `${s.cliente || 'Cliente'} — ${s.proyecto || s.tipo || 'Solicitud'}`,
+        responsable: s.nombre || 'Solicitante',
+        detalle: `Solicitud N° ${s.num} · ${s.tipo || ''}`,
+        color: 'amarillo'
+      }));
+      tvShowNotification(notifs);
+    }
+    tvTakeSolSnapshot(sols);
+  } catch(e){ /* silencioso */ }
 }
 
 function tvDetectChanges(newTasks){
@@ -5933,7 +5967,9 @@ function tvShowNotification(notifs){
   if(old) old.remove();
 
   const n = notifs[0]; // mostrar la primera; si hay varias, las encola
-  const esNueva = n.tipo === 'nueva';
+  const esNueva = n.tipo === 'nueva';        // tarea nueva asignada → azul
+  const esSolicitud = n.tipo === 'solicitud'; // solicitud nueva entrante → amarillo
+  const esAzul = esNueva; // solo las tareas asignadas son azules
 
   const overlay = document.createElement('div');
   overlay.id = 'tvNotifOverlay';
@@ -5945,27 +5981,31 @@ function tvShowNotification(notifs){
 
   const card = document.createElement('div');
   card.style.cssText = `
-    background:${esNueva ? '#1a3a6b' : '#1a1a00'};
-    border:3px solid ${esNueva ? '#4f8ef7' : '#f59e0b'};
+    background:${esAzul ? '#1a3a6b' : '#1a1a00'};
+    border:3px solid ${esAzul ? '#4f8ef7' : '#f59e0b'};
     border-radius:20px;padding:40px 52px;text-align:center;
     max-width:600px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.5);
     animation:tvSlideUp .4s cubic-bezier(.2,.8,.2,1);
     font-family:'DM Sans',sans-serif;
   `;
 
-  const icon = esNueva ? '👆' : '🔔';
-  const titulo = esNueva ? 'Nueva tarea asignada' : 'Actualización de tarea';
-  const colorTexto = esNueva ? '#9ec5ff' : '#fde68a';
-  const colorTitulo = esNueva ? '#ffffff' : '#fef3c7';
+  let icon, titulo;
+  if(esNueva){ icon='👆'; titulo='Nueva tarea asignada'; }
+  else if(esSolicitud){ icon='🔔'; titulo='Nueva solicitud recibida'; }
+  else { icon='🔔'; titulo='Actualización de tarea'; }
+  const colorTexto = esAzul ? '#9ec5ff' : '#fde68a';
+  const colorTitulo = esAzul ? '#ffffff' : '#fef3c7';
+  const labelResp = esSolicitud ? '🙋 Solicita: ' : '👤 ';
 
   card.innerHTML = `
     <div style="font-size:56px;margin-bottom:16px;line-height:1;">${icon}</div>
     <div style="font-size:15px;font-weight:600;color:${colorTexto};text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;">${titulo}</div>
     <div style="font-size:32px;font-weight:700;color:${colorTitulo};margin-bottom:12px;line-height:1.2;">${esc(n.tarea)}</div>
-    <div style="font-size:20px;color:${colorTexto};margin-bottom:8px;">👤 ${esc(n.responsable)}</div>
+    <div style="font-size:20px;color:${colorTexto};margin-bottom:8px;">${labelResp}${esc(n.responsable)}</div>
     ${n.detalle ? `<div style="font-size:16px;color:${colorTexto};opacity:.8;margin-bottom:20px;">${esc(n.detalle)}</div>` : '<div style="margin-bottom:20px;"></div>'}
+    ${esSolicitud ? `<div style="font-size:14px;color:${colorTexto};opacity:.7;margin-bottom:8px;">→ Asignar desde el Coordinador</div>` : ''}
     <div style="font-size:13px;color:${colorTexto};opacity:.55;margin-top:8px;">Clic en cualquier lugar para volver · se cierra en 5 min</div>
-    ${notifs.length > 1 ? `<div style="font-size:13px;color:${colorTexto};opacity:.6;margin-top:6px;">+${notifs.length-1} cambio${notifs.length>2?'s':''} adicional${notifs.length>2?'es':''}</div>` : ''}
+    ${notifs.length > 1 ? `<div style="font-size:13px;color:${colorTexto};opacity:.6;margin-top:6px;">+${notifs.length-1} más</div>` : ''}
   `;
 
   overlay.appendChild(card);
@@ -6058,6 +6098,17 @@ async function cloudLoad(_esReintento){
   }
 }
 
+// ── CLOUD: TRAER cambios desde el Sheet (botón ⬇️ Traer) ──
+async function cloudPull(){
+  if(!CFG_CLOUD.SHEETS_URL){ showSyncBanner('ℹ️ No hay URL de nube configurada.'); return; }
+  const hayTrabajo = (tasks && tasks.length > 0);
+  if(hayTrabajo){
+    if(!confirm('Esto traerá la última versión guardada en la nube (incluye tareas asignadas desde el Coordinador).\n\nSe reemplazará lo que ves en pantalla por lo de la nube. ¿Continuar?')) return;
+  }
+  await cloudLoad();
+  showSyncBanner('⬇️ Cambios traídos desde la nube');
+}
+
 // ── CLOUD: GUARDAR manualmente (botón ☁️ Nube) ──
 async function cloudSave(){
   // En modo TV el botón nunca escribe — solo relee (TV es solo lectura)
@@ -6143,7 +6194,8 @@ function enableTVMode(){
   // Auto-refresh every N minutes — LEE desde el Sheet (no escribe)
   const mins = CFG_CLOUD.TV_REFRESH_MIN || 10;
   cloudLoad(); // primera lectura inmediata al entrar a modo TV
-  _tvInterval = setInterval(()=>cloudLoad(), mins * 60 * 1000);
+  tvCheckSolicitudes(); // primera lectura de solicitudes (solo memoriza)
+  _tvInterval = setInterval(()=>{ cloudLoad(); tvCheckSolicitudes(); }, mins * 60 * 1000);
   showSyncBanner('📺 Modo TV activo — actualización cada '+mins+' min');
 }
 

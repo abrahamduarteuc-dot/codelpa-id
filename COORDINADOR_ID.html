@@ -421,6 +421,7 @@ function renderLog() {
 
 // ── LOAD DATA ──
 let ganttAllTasks = [];   // lista COMPLETA (para guardar sin perder hitos/archivadas)
+let ganttProjectTitle = ''; // título del proyecto (para no pisarlo al guardar)
 let dataLoaded = false;   // true solo si la última carga del Gantt fue exitosa
 
 async function reload() {
@@ -435,6 +436,7 @@ async function reload() {
     ganttAllTasks = Array.isArray(rGantt.tasks) ? rGantt.tasks : [];
     ganttTasks = ganttAllTasks.filter(t => !t.milestone && !t._archived);
     ganttPeople = rGantt.people || [];
+    ganttProjectTitle = rGantt.projectTitle || '';
     dataLoaded = true;
     setSyncStatus('ok');
     addLog('✅ Datos cargados — ' + solicitudes.length + ' solicitudes, ' + ganttTasks.length + ' tareas, ' + ganttPeople.length + ' responsables');
@@ -864,7 +866,7 @@ async function confirmarAsignacion() {
     const ganttData = {
       tasks: ganttAllTasks,
       people: ganttPeople,
-      projectTitle: '',
+      projectTitle: ganttProjectTitle || 'Planificación I+D Codelpa',
       lastUpdated: new Date().toISOString()
     };
     let ok1 = false, ok2 = false;
@@ -1181,11 +1183,19 @@ async function cqAgregarGantt(ev, p) {
       body: JSON.stringify({
         action: 'save', sheet: 'gantt',
         tasks: ganttAllTasks, people: ganttPeople,
-        projectTitle: '', lastUpdated: new Date().toISOString()
+        projectTitle: ganttProjectTitle || 'Planificación I+D Codelpa',
+        lastUpdated: new Date().toISOString()
       })
     });
     addLog(`📤 Tarea enviada al Gantt: ${p.owner} (${fd(p.inicio)} → ${fd(p.fin)})`);
     toast('📤 Tarea enviada. Verifica en el Gantt al recargarlo.');
+    // Contraer resultados y mostrar confirmación compacta
+    const res = document.getElementById('cqResultado');
+    if (res) res.innerHTML = `<div class="result-ok" style="margin-top:4px;">
+      <h3>✅ Tarea enviada</h3>
+      <p><strong>${esc(p.owner)}</strong> · ${fd(p.inicio)} → ${fd(p.fin)}<br>
+      <span style="font-size:11px;color:#166534;">Verifica en el Gantt al recargarlo.</span></p>
+    </div>`;
     renderDisponibilidad();
     if (btn) btn.disabled = false;
   } catch (e) {

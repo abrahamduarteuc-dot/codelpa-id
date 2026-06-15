@@ -117,6 +117,8 @@ input[list]{cursor:pointer;}
 
 /* ── REQUEST CARDS ── */
 .rc{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--border2);border-radius:var(--r);padding:14px 16px;margin-bottom:11px;box-shadow:var(--sh);cursor:context-menu;}
+.rc-collapsible{cursor:pointer;transition:box-shadow .15s,border-color .15s;}
+.rc-collapsible:hover{box-shadow:0 3px 12px rgba(0,0,0,.09);border-left-color:var(--accent);}
 .rc.pend{border-left-color:var(--amber);}
 .rc.plan{border-left-color:var(--green);background:linear-gradient(90deg,var(--green-l),var(--surface) 55%);}
 .rc.done{border-left-color:var(--text3);opacity:.82;}
@@ -682,7 +684,7 @@ function cardHTML(r,tab){
   if(tab==='T'&&r.estado==='Pendiente'){
     actions=`<div class="rc-actions">
       <button class="btn btn-green btn-sm" onclick="openDetail('${r.num}')">📄 Ver detalle</button>
-      <button class="btn btn-primary btn-sm" onclick="openRespond('${r.num}')">🔗 Responder</button>
+      <span class="rc-hint" style="align-self:center;margin-left:8px">Se asigna desde el Coordinador</span>
     </div>`;
   }
   if(tab==='R'&&r.estado==='En plan'){
@@ -690,6 +692,31 @@ function cardHTML(r,tab){
   }
   const ctx=tab==='R'&&(r.estado==='En plan'||r.estado==='Completada')?`oncontextmenu="onCtx(event,'${r.num}')"`:
             tab==='T'&&r.estado==='Pendiente'?`oncontextmenu="onCtxT(event,'${r.num}')"`:'';;
+
+  // En pestaña Respuesta: tarjeta compacta con detalle expandible al hacer clic
+  const esExpandible = tab==='R' && planPart;
+  if(esExpandible){
+    const resumen = r.estado==='Cancelada'||r.estado==='Cancelada_R'
+      ? `<span style="color:var(--text2)">Cancelada</span>`
+      : `<span style="color:var(--text2)">${r.responsable||'Sin responsable'} · ${fd(r.iniPlan)} → ${fd(r.finPlan)}</span>`;
+    return `<div class="rc ${stClass(r.estado)} rc-collapsible" ${ctx} onclick="toggleCard(this,event)">
+      <div class="rc-top">
+        <span class="rc-num">Solicitud N° ${r.num}</span>
+        ${stBadge(r.estado)}
+        <span style="font-size:11px;color:var(--text3);margin-left:2px">${tipoLabel(r.tipo||'DN')}</span>
+        ${techIco}
+        <span class="rc-chevron" style="margin-left:auto;color:var(--text3);transition:transform .25s;font-size:13px">▼</span>
+      </div>
+      <div class="rc-body" style="margin:4px 0"><b>${r.cliente||'Sin cliente'}</b>${r.proyecto?' — '+r.proyecto:''}</div>
+      <div class="rc-summary" style="font-size:12px;margin-bottom:2px">${resumen}</div>
+      <div class="rc-detail" style="max-height:0;overflow:hidden;transition:max-height .3s ease">
+        <div class="rc-meta" style="margin-top:8px"><span style="font-size:10.5px;font-weight:600;color:var(--text3)">SOLICITADO POR</span><span>👤 ${r.nombre}</span><span>✉️ ${r.correo}</span><span>📅 ${fd(r.fecha)}</span></div>
+        <div style="font-size:12px;color:var(--text2);margin:6px 0">${r.desc||''}</div>
+        ${planPart}
+      </div>
+    </div>`;
+  }
+
   return `<div class="rc ${stClass(r.estado)}" ${ctx}>
     <div class="rc-top">
       <span class="rc-num">Solicitud N° ${r.num}</span>
@@ -701,6 +728,23 @@ function cardHTML(r,tab){
     <div class="rc-meta"><span style="font-size:10.5px;font-weight:600;color:var(--text3);letter-spacing:.02em">SOLICITADO POR</span><span>👤 ${r.nombre}</span><span>✉️ ${r.correo}</span><span>📅 ${fd(r.fecha)}</span></div>
     ${planPart}${actions}
   </div>`;
+}
+
+// Expandir/colapsar tarjeta en pestaña Respuesta
+function toggleCard(card, ev){
+  // No colapsar si se hizo clic en el icono de specs técnicas
+  if(ev && ev.target && ev.target.classList.contains('tech-ico')) return;
+  const detail = card.querySelector('.rc-detail');
+  const chevron = card.querySelector('.rc-chevron');
+  if(!detail) return;
+  const abierto = detail.style.maxHeight && detail.style.maxHeight !== '0px';
+  if(abierto){
+    detail.style.maxHeight = '0';
+    if(chevron) chevron.style.transform = 'rotate(0deg)';
+  } else {
+    detail.style.maxHeight = detail.scrollHeight + 'px';
+    if(chevron) chevron.style.transform = 'rotate(180deg)';
+  }
 }
 
 /* ═══════════════════════════════
