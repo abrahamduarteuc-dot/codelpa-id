@@ -6202,29 +6202,92 @@ function showSyncBanner(msg){
 // ── TV MODE ──
 function activateTVMode(){
   if(document.body.classList.contains('tv-mode')){
-    // Deactivate
+    // Desactivar modo TV
     document.body.classList.remove('tv-mode');
     clearInterval(_tvInterval);
     document.getElementById('tvStyleEl')?.remove();
-    document.querySelector('[onclick="activateTVMode()"]').textContent='📺 TV';
+    // Restaurar listeners de edición
+    if(document._tvDblClickBlock){
+      document.removeEventListener('dblclick', document._tvDblClickBlock, true);
+      delete document._tvDblClickBlock;
+    }
+    if(document._tvContextBlock){
+      document.removeEventListener('contextmenu', document._tvContextBlock, true);
+      delete document._tvContextBlock;
+    }
+    const btn = document.querySelector('[onclick="activateTVMode()"]');
+    if(btn) btn.textContent = '📺 TV';
     showSyncBanner('📺 Modo TV desactivado');
   } else {
     enableTVMode();
-    document.querySelector('[onclick="activateTVMode()"]').textContent='✕ Salir TV';
+    const btn = document.querySelector('[onclick="activateTVMode()"]');
+    if(btn) btn.style.display = 'none'; // ocultamos el botón TV cuando está activo
   }
 }
 function enableTVMode(){
   document.body.classList.add('tv-mode');
-  // Hide edit buttons, show read-only gantt
-  const style = document.createElement('style');style.id='tvStyleEl';
-  style.textContent = `.tv-mode .addsub,.tv-mode .delbtn,.tv-mode .dotbtn,.tv-mode #topbar .fg,.tv-mode .btn-primary,.tv-mode #dominoBar{display:none!important;}
-  .tv-mode .trow{height:46px!important;min-height:46px!important;font-size:13px!important;}
-  .tv-mode .gbarlbl{font-size:12px!important;}
-  .tv-mode #topbar{padding:8px 16px;}`;
+
+  // CSS: ocultar TODO lo que no es solo lectura
+  const style = document.createElement('style');
+  style.id = 'tvStyleEl';
+  style.textContent = `
+    /* Ocultar barra de edición completa */
+    .tv-mode #addWrap,
+    .tv-mode .fg,
+    .tv-mode .vmchip,
+    .tv-mode .sep,
+    .tv-mode .btn-ghost,
+    .tv-mode #dominoBar,
+    .tv-mode #tabbar,
+    .tv-mode [onclick*="window.print"],
+    .tv-mode [onclick*="cloudSave"],
+    .tv-mode [onclick*="activateTVMode"],
+    .tv-mode [onclick*="cfgWrap"],
+    .tv-mode #cfgWrap,
+    .tv-mode [title*="Imprimir"],
+    .tv-mode [title*="Guardar"],
+    .tv-mode [title*="Cargar"],
+    .tv-mode [title*="Configuración"]
+    { display:none !important; }
+
+    /* Ocultar botones de fila: sub, eliminar, menú */
+    .tv-mode .addsub,
+    .tv-mode .delbtn,
+    .tv-mode .dotbtn,
+    .tv-mode .btn-primary
+    { display:none !important; }
+
+    /* Solo mostrar logo + indicador de sync en topbar */
+    .tv-mode #topbar { padding:8px 16px; background:#1a3a6b; }
+    .tv-mode #topbar .logo { color:#fff; font-size:15px; font-weight:700; }
+
+    /* Filas más altas para TV */
+    .tv-mode .trow { height:46px !important; min-height:46px !important; font-size:13px !important; }
+    .tv-mode .gbarlbl { font-size:12px !important; }
+
+    /* Bloquear cursores de edición */
+    .tv-mode .trow td { cursor:default !important; }
+    .tv-mode .gbar { cursor:default !important; pointer-events:none !important; }
+  `;
   document.head.appendChild(style);
-  // Auto-refresh every N minutes — LEE desde el Sheet (no escribe)
-  const mins = CFG_CLOUD.TV_REFRESH_MIN || 10;
-  cloudLoad(); // primera lectura inmediata al entrar a modo TV
+
+  // Bloquear doble clic en filas (abriría modal de edición)
+  document._tvDblClickBlock = function(e){
+    e.stopImmediatePropagation();
+    e.preventDefault();
+  };
+  document.addEventListener('dblclick', document._tvDblClickBlock, true);
+
+  // Bloquear clic derecho (abriría menú contextual de edición)
+  document._tvContextBlock = function(e){
+    e.stopImmediatePropagation();
+    e.preventDefault();
+  };
+  document.addEventListener('contextmenu', document._tvContextBlock, true);
+
+  // Auto-refresh: LEE desde el Sheet (nunca escribe)
+  const mins = CFG_CLOUD.TV_REFRESH_MIN || 2;
+  cloudLoad(); // primera lectura inmediata
   tvCheckSolicitudes(); // primera lectura de solicitudes (solo memoriza)
   _tvInterval = setInterval(()=>{ cloudLoad(); tvCheckSolicitudes(); }, mins * 60 * 1000);
   showSyncBanner('📺 Modo TV activo — actualización cada '+mins+' min');
