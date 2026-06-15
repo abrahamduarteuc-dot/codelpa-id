@@ -424,24 +424,37 @@ const SCHEMA_AT=[
 ═══════════════════════════════ */
 async function init(){
   buildTechForm();
-  // Try cloud first
+  await refreshSolicitudes(true);
+  // Auto-refresh cada 60s (no interrumpe si estás escribiendo una solicitud)
+  setInterval(()=>{ refreshSolicitudes(false); }, 60000);
+}
+
+// Carga solicitudes desde el Sheet. firstLoad=true usa fallback local si no hay nube.
+async function refreshSolicitudes(firstLoad){
+  // No refrescar si el usuario está en la pestaña Enviar escribiendo
+  if(!firstLoad){
+    const tabActiva = document.querySelector('.tab.on')?.dataset?.tab;
+    const escribiendo = document.activeElement && ['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName);
+    if(tabActiva === 'enviar' && escribiendo) return;
+  }
   if(CFG.SHEETS_URL){
     try{
-      const res = await fetch(CFG.SHEETS_URL + '?action=load&sheet=solicitudes');
+      const res = await fetch(CFG.SHEETS_URL + '?action=load&sheet=solicitudes&_t=' + Date.now());
       if(res.ok){
         const data = await res.json();
-        if(data && Array.isArray(data.requests) && data.requests.length > 0){
+        if(data && Array.isArray(data.requests)){
           reqs = data.requests;
           localStorage.setItem(LS, JSON.stringify(reqs));
           renderAll_(); updateBadges(); return;
         }
       }
-    } catch(e){ console.warn('Solicitudes: sin nube, usando local'); }
+    } catch(e){ if(firstLoad) console.warn('Solicitudes: sin nube, usando local'); }
   }
-  // Fallback localStorage
-  const raw = localStorage.getItem(LS);
-  reqs = raw ? JSON.parse(raw) : seedDemo();
-  renderAll_(); updateBadges();
+  if(firstLoad){
+    const raw = localStorage.getItem(LS);
+    reqs = raw ? JSON.parse(raw) : seedDemo();
+    renderAll_(); updateBadges();
+  }
 }
 
 async function persistChanges(){

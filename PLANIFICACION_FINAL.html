@@ -5908,9 +5908,9 @@ function tvTakeSolSnapshot(sols){
   _tvSolSnapshot = (sols||[]).map(s=>({num:s.num, estado:s.estado}));
 }
 
-// Detecta solicitudes NUEVAS (pendientes) leídas del Sheet en modo TV
+// Detecta solicitudes NUEVAS (pendientes) — funciona en TV y en Gantt principal
 async function tvCheckSolicitudes(){
-  if(!document.body.classList.contains('tv-mode') || !CFG_CLOUD.SHEETS_URL) return;
+  if(!CFG_CLOUD.SHEETS_URL) return;
   try{
     const res = await fetch(CFG_CLOUD.SHEETS_URL + '?action=load&sheet=solicitudes&_t=' + Date.now());
     if(!res.ok) return;
@@ -5937,7 +5937,7 @@ async function tvCheckSolicitudes(){
 }
 
 function tvDetectChanges(newTasks){
-  if(!_tvSnapshot || !document.body.classList.contains('tv-mode')) return;
+  if(!_tvSnapshot) return;
   const prev = _tvSnapshot;
   const notifs = [];
 
@@ -5961,71 +5961,94 @@ function tvDetectChanges(newTasks){
 }
 
 function tvShowNotification(notifs){
-  // Eliminar notificación anterior si existe
-  const old = document.getElementById('tvNotifOverlay');
-  if(old) old.remove();
+  const esTV = document.body.classList.contains('tv-mode');
 
-  const n = notifs[0]; // mostrar la primera; si hay varias, las encola
-  const esNueva = n.tipo === 'nueva';        // tarea nueva asignada → azul
-  const esSolicitud = n.tipo === 'solicitud'; // solicitud nueva entrante → amarillo
-  const esAzul = esNueva; // solo las tareas asignadas son azules
+  // Contenedor apilado (se crea una vez)
+  let stack = document.getElementById('notifStack');
+  if(!stack){
+    stack = document.createElement('div');
+    stack.id = 'notifStack';
+    stack.style.cssText = esTV
+      ? 'position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:12px;width:300px;max-height:90vh;overflow:hidden;'
+      : 'position:fixed;bottom:18px;right:18px;z-index:9999;display:flex;flex-direction:column;gap:10px;width:240px;';
+    document.body.appendChild(stack);
+  }
 
-  const overlay = document.createElement('div');
-  overlay.id = 'tvNotifOverlay';
-  overlay.style.cssText = `
-    position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;
-    display:flex;align-items:center;justify-content:center;
-    animation:tvFadeIn .4s ease;cursor:pointer;
-  `;
+  notifs.forEach(n => crearTarjetaNotif(n, esTV, stack));
+}
 
-  const card = document.createElement('div');
-  card.style.cssText = `
-    background:${esAzul ? '#1a3a6b' : '#1a1a00'};
-    border:3px solid ${esAzul ? '#4f8ef7' : '#f59e0b'};
-    border-radius:20px;padding:40px 52px;text-align:center;
-    max-width:600px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.5);
-    animation:tvSlideUp .4s cubic-bezier(.2,.8,.2,1);
-    font-family:'DM Sans',sans-serif;
-  `;
+function crearTarjetaNotif(n, esTV, stack){
+  const esNueva = n.tipo === 'nueva';
+  const esSolicitud = n.tipo === 'solicitud';
+  const esAzul = esNueva;
 
   let icon, titulo;
   if(esNueva){ icon='👆'; titulo='Nueva tarea asignada'; }
-  else if(esSolicitud){ icon='🔔'; titulo='Nueva solicitud recibida'; }
-  else { icon='🔔'; titulo='Actualización de tarea'; }
-  const colorTexto = esAzul ? '#9ec5ff' : '#fde68a';
-  const colorTitulo = esAzul ? '#ffffff' : '#fef3c7';
-  const labelResp = esSolicitud ? '🙋 Solicita: ' : '👤 ';
+  else if(esSolicitud){ icon='🔔'; titulo='Nueva solicitud'; }
+  else { icon='🔔'; titulo='Actualización'; }
+  const cTexto = esAzul ? '#9ec5ff' : '#fde68a';
+  const cTitulo = esAzul ? '#ffffff' : '#fef3c7';
+  const bg = esAzul ? '#1a3a6b' : '#1a1a00';
+  const borde = esAzul ? '#4f8ef7' : '#f59e0b';
+  const labelResp = esSolicitud ? '🙋 ' : '👤 ';
 
-  card.innerHTML = `
-    <div style="font-size:56px;margin-bottom:16px;line-height:1;">${icon}</div>
-    <div style="font-size:15px;font-weight:600;color:${colorTexto};text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;">${titulo}</div>
-    <div style="font-size:32px;font-weight:700;color:${colorTitulo};margin-bottom:12px;line-height:1.2;">${esc(n.tarea)}</div>
-    <div style="font-size:20px;color:${colorTexto};margin-bottom:8px;">${labelResp}${esc(n.responsable)}</div>
-    ${n.detalle ? `<div style="font-size:16px;color:${colorTexto};opacity:.8;margin-bottom:20px;">${esc(n.detalle)}</div>` : '<div style="margin-bottom:20px;"></div>'}
-    ${esSolicitud ? `<div style="font-size:14px;color:${colorTexto};opacity:.7;margin-bottom:8px;">→ Asignar desde el Coordinador</div>` : ''}
-    <div style="font-size:13px;color:${colorTexto};opacity:.55;margin-top:8px;">Clic en cualquier lugar para volver · se cierra en 5 min</div>
-    ${notifs.length > 1 ? `<div style="font-size:13px;color:${colorTexto};opacity:.6;margin-top:6px;">+${notifs.length-1} más</div>` : ''}
-  `;
+  const card = document.createElement('div');
+  card.className = 'notif-card';
 
-  overlay.appendChild(card);
-  document.body.appendChild(overlay);
+  if(esTV){
+    // Modo TV: tarjeta grande apilada
+    card.style.cssText = `background:${bg};border:2px solid ${borde};border-radius:14px;
+      padding:16px 18px;box-shadow:0 8px 30px rgba(0,0,0,.4);cursor:pointer;
+      animation:tvSlideIn .35s cubic-bezier(.2,.8,.2,1);font-family:'DM Sans',sans-serif;`;
+    card.innerHTML = `
+      <div style="font-size:28px;margin-bottom:6px;line-height:1;">${icon}</div>
+      <div style="font-size:10.5px;font-weight:600;color:${cTexto};text-transform:uppercase;letter-spacing:1.5px;margin-bottom:5px;">${titulo}</div>
+      <div style="font-size:18px;font-weight:700;color:${cTitulo};margin-bottom:4px;line-height:1.2;">${esc(n.tarea)}</div>
+      <div style="font-size:14px;color:${cTexto};">${labelResp}${esc(n.responsable)}</div>
+      ${n.detalle ? `<div style="font-size:12px;color:${cTexto};opacity:.8;margin-top:3px;">${esc(n.detalle)}</div>` : ''}
+      ${esSolicitud ? `<div style="font-size:11px;color:${cTexto};opacity:.7;margin-top:6px;">→ Asignar desde el Coordinador</div>` : ''}
+      <div style="font-size:10px;color:${cTexto};opacity:.5;margin-top:8px;">Clic para cerrar · 5 min</div>
+    `;
+  } else {
+    // Modo Gantt: toast discreto
+    card.style.cssText = `background:${bg};border-left:4px solid ${borde};border-radius:8px;
+      padding:10px 13px;box-shadow:0 4px 16px rgba(0,0,0,.22);cursor:pointer;
+      animation:tvSlideIn .3s ease;font-family:'DM Sans',sans-serif;`;
+    card.innerHTML = `
+      <div style="font-size:10px;color:${cTexto};text-transform:uppercase;letter-spacing:1px;">${icon} ${titulo}</div>
+      <div style="font-size:13px;font-weight:600;color:${cTitulo};margin-top:2px;">${esc(n.tarea)}</div>
+      <div style="font-size:11px;color:${cTexto};">${labelResp}${esc(n.responsable)}</div>
+    `;
+  }
 
-  // Cerrar con click en cualquier lugar
-  overlay.addEventListener('click', ()=>{ overlay.remove(); tvTakeSnapshot(); });
+  // Cierre individual con click
+  const cerrar = ()=>{
+    if(card._timer) clearTimeout(card._timer);
+    card.style.transition = 'opacity .25s, transform .25s';
+    card.style.opacity = '0';
+    card.style.transform = 'translateX(20px)';
+    setTimeout(()=>{
+      card.remove();
+      // Si el stack quedó vacío, lo eliminamos y refrescamos snapshot
+      if(stack && !stack.children.length){ stack.remove(); tvTakeSnapshot(); }
+    }, 250);
+  };
+  card.addEventListener('click', cerrar);
 
-  // Cerrar automáticamente a los 5 minutos
-  const _autoClose = setTimeout(()=>{ overlay.remove(); tvTakeSnapshot(); }, 5 * 60 * 1000);
-  overlay._autoClose = _autoClose;
+  // Timer individual de 5 minutos
+  card._timer = setTimeout(cerrar, 5 * 60 * 1000);
+
+  stack.appendChild(card);
 }
 
-// Inyectar animaciones CSS para notificaciones TV
+// Inyectar animaciones CSS para notificaciones
 (function(){
   if(document.getElementById('tvNotifStyle')) return;
   const s = document.createElement('style');
   s.id = 'tvNotifStyle';
   s.textContent = `
     @keyframes tvFadeIn { from{opacity:0} to{opacity:1} }
-    @keyframes tvSlideUp { from{transform:translateY(40px);opacity:0} to{transform:translateY(0);opacity:1} }
+    @keyframes tvSlideIn { from{transform:translateX(30px);opacity:0} to{transform:translateX(0);opacity:1} }
   `;
   document.head.appendChild(s);
 })();
@@ -6082,8 +6105,8 @@ function saveToLocal(data){
 async function cloudLoad(_esReintento){
   if(!CFG_CLOUD.SHEETS_URL) return;
   console.log('☁️ CLOUD LOAD (lectura)', new Date().toLocaleTimeString('es-CL'));
-  // Snapshot antes de actualizar (para detectar cambios en modo TV)
-  if(document.body.classList.contains('tv-mode') && !_tvSnapshot) tvTakeSnapshot();
+  // Snapshot antes de actualizar (para detectar cambios) — en TV y Gantt principal
+  if(!_tvSnapshot) tvTakeSnapshot();
   setSyncStatus('saving');
   try{
     // cache-busting: evita respuestas cacheadas viejas del navegador/Google
@@ -6091,14 +6114,14 @@ async function cloudLoad(_esReintento){
     if(!res.ok) throw new Error('HTTP '+res.status);
     const data = await res.json();
     if(data && Array.isArray(data.tasks)){
-      // Detectar cambios ANTES de aplicar (compara con snapshot)
-      if(document.body.classList.contains('tv-mode') && _tvSnapshot){
+      // Detectar cambios ANTES de aplicar (compara con snapshot) — TV y Gantt
+      if(_tvSnapshot){
         tvDetectChanges(data.tasks);
       }
       applyCloudData(data);
       saveToLocal(data);
-      // Actualizar snapshot tras aplicar (si no hay notificación activa)
-      if(!document.getElementById('tvNotifOverlay')) tvTakeSnapshot();
+      // Actualizar snapshot tras aplicar (si no hay notificaciones activas)
+      if(!document.getElementById('notifStack')) tvTakeSnapshot();
       setSyncStatus('synced');
       showSyncBanner('✅ Planificación actualizada desde la nube');
     }
@@ -6294,8 +6317,9 @@ window.addEventListener('beforeunload', function(e){
     if(_cambiosPendientes) return;
     // No refrescar si hay algún modal/formulario abierto (estás editando)
     if(document.querySelector('.ov.open, #confirmOv.open')) return;
-    // Todo tranquilo → traer lo último del Sheet
+    // Todo tranquilo → traer lo último del Sheet + revisar solicitudes nuevas
     cloudLoad();
+    tvCheckSolicitudes();
   }, REFRESH_MIN * 60 * 1000);
 })();
 </script>
